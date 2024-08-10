@@ -1,0 +1,55 @@
+[gd_resource type="Shader" format=3 uid="uid://dscfwogv6p8e1"]
+
+[resource]
+code = "shader_type canvas_item;
+
+uniform float t_buffer[16384];
+uniform bool is_transparent = true;
+
+//uniform sampler2D t_texture; // Texture containing t values
+
+
+vec4 get_fire_color(float val) {
+    val = clamp(val, 0.0, 1.0);
+    float r, g, b, a;
+	a = 1.;
+    if (val < 0.3) {
+        float _s = val / 0.3;
+        r = 0.2 * _s;
+        g = 0.2 * _s;
+        b = 0.2 * _s;
+        a = 0.75 * _s;
+    } else if (val < 0.5) {
+        float _s = (val - 0.3) / 0.2;
+        r = 0.2 + 0.8 * _s;
+        g = 0.1;
+        b = 0.1;
+        a = .75;
+    } else {
+        float _s = (val - 0.5) / 0.48;
+        r = 1.0;
+        g = _s;
+        b = 0.0;
+    }
+    return vec4(r, g, b, a);
+}
+
+void fragment() {
+    //vec2 uv = FRAGCOORD.xy / SCREEN_PIXEL_SIZE;
+	//vec2 point_coord = POINT_COORD;
+	//vec2 local_pos = VERTEX / SCREEN_PIXEL_SIZE;
+    vec2 tex_coords = UV;
+    // Scale UV coordinates to buffer size
+    int x = int(tex_coords.x * 128.0);
+    int y = int(tex_coords.y * 128.0);
+
+    // Calculate the 1D index from 2D coordinates
+    int idx = y * 128 + x;
+
+    // Access the temperature from the 1D array
+    float temp = t_buffer[idx];
+
+    COLOR = get_fire_color(temp);
+	//COLOR = vec4(1.0, 0.5, 1.0, 1.0);
+}
+"

@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://cjcwfw7cjo35w"
+path="res://.godot/imported/set_bnd_p.glsl-cc5c0ab515b265ac1d2c4956d7fd3e96.res"
+
+[deps]
+
+source_file="res://components/stam_compute_shader/shaders/set_bnd_p.glsl"
+dest_files=["res://.godot/imported/set_bnd_p.glsl-cc5c0ab515b265ac1d2c4956d7fd3e96.res"]
+
+[params]
+

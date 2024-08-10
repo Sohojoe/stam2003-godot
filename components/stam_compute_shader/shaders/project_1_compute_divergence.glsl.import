@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://cr7cy2me25uvs"
+path="res://.godot/imported/project_1_compute_divergence.glsl-f90cd60247713c7081f8ed24943f3e6d.res"
+
+[deps]
+
+source_file="res://components/stam_compute_shader/shaders/project_1_compute_divergence.glsl"
+dest_files=["res://.godot/imported/project_1_compute_divergence.glsl-f90cd60247713c7081f8ed24943f3e6d.res"]
+
+[params]
+

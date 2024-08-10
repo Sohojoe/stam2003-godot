@@ -1,0 +1,66 @@
+[gd_scene load_steps=11 format=3 uid="uid://p0chnegfgihs"]
+
+[ext_resource type="Material" uid="uid://b1g7kww3p0gxc" path="res://components/stam_compute_shader/render_shaders/fire_shader_material.tres" id="1_7dk5j"]
+[ext_resource type="Script" path="res://components/stam_compute_shader/scripts/fuild_shader.gd" id="1_kblcb"]
+[ext_resource type="Texture2D" uid="uid://cvvqd44h3uofo" path="res://components/stam_compute_shader/assets/blank.jpg" id="2_edrk4"]
+[ext_resource type="Script" path="res://components/stam_compute_shader/render_shaders/fire.gd" id="3_moc5h"]
+[ext_resource type="Material" uid="uid://daspc1brf7s5j" path="res://components/stam_compute_shader/render_shaders/uv_shader_material.tres" id="4_tg84r"]
+[ext_resource type="Script" path="res://components/stam_compute_shader/render_shaders/uv.gd" id="5_v73we"]
+[ext_resource type="Material" uid="uid://bualklk57qe7i" path="res://components/stam_compute_shader/render_shaders/p_shader_material.tres" id="6_nc8hh"]
+[ext_resource type="Script" path="res://components/stam_compute_shader/render_shaders/p.gd" id="7_v58f8"]
+[ext_resource type="Material" uid="uid://hcbvjpw1wf0r" path="res://components/stam_compute_shader/render_shaders/div_shader_material.tres" id="8_i3y2l"]
+[ext_resource type="Script" path="res://components/stam_compute_shader/render_shaders/div.gd" id="9_elyrm"]
+
+[node name="Fire" type="Node2D"]
+script = ExtResource("1_kblcb")
+
+[node name="view_fire" type="Sprite2D" parent="."]
+material = ExtResource("1_7dk5j")
+position = Vector2(2.08165e-12, -64)
+scale = Vector2(2, 2)
+texture = ExtResource("2_edrk4")
+flip_v = true
+script = ExtResource("3_moc5h")
+
+[node name="view_uv" type="Sprite2D" parent="."]
+visible = false
+material = ExtResource("4_tg84r")
+position = Vector2(2.08165e-12, -64)
+scale = Vector2(2, 2)
+texture = ExtResource("2_edrk4")
+flip_v = true
+script = ExtResource("5_v73we")
+
+[node name="ToggleTimer" type="Timer" parent="view_uv"]
+
+[node name="view_p" type="Sprite2D" parent="."]
+visible = false
+material = ExtResource("6_nc8hh")
+position = Vector2(2.08165e-12, -64)
+scale = Vector2(2, 2)
+texture = ExtResource("2_edrk4")
+flip_v = true
+script = ExtResource("7_v58f8")
+color_scale = 0.638
+
+[node name="ToggleTimer" type="Timer" parent="view_p"]
+
+[node name="view_div" type="Sprite2D" parent="."]
+visible = false
+material = ExtResource("8_i3y2l")
+position = Vector2(2.08165e-12, -64)
+scale = Vector2(2, 2)
+texture = ExtResource("2_edrk4")
+flip_v = true
+script = ExtResource("9_elyrm")
+color_scale = 0.116
+auto_reset_color_scale = false
+
+[node name="ToggleTimer" type="Timer" parent="view_div"]
+
+[node name="EditorLabel" type="RichTextLabel" parent="."]
+offset_left = -13.0
+offset_top = -12.0
+offset_right = 27.0
+offset_bottom = 28.0
+text = "Fire"

@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://cvavbvlpy4fnu"
+path="res://.godot/imported/diffuse.glsl-36378064f5bb25a85e63c3341433fb9d.res"
+
+[deps]
+
+source_file="res://components/stam_compute_shader/shaders/diffuse.glsl"
+dest_files=["res://.godot/imported/diffuse.glsl-36378064f5bb25a85e63c3341433fb9d.res"]
+
+[params]
+

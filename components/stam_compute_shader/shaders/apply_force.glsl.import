@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://0cw6b64u1nfd"
+path="res://.godot/imported/apply_force.glsl-e95ab0579f6061c60aa91e9eb58ccff4.res"
+
+[deps]
+
+source_file="res://components/stam_compute_shader/shaders/apply_force.glsl"
+dest_files=["res://.godot/imported/apply_force.glsl-e95ab0579f6061c60aa91e9eb58ccff4.res"]
+
+[params]
+
