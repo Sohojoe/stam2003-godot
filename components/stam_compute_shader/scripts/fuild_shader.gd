@@ -4,7 +4,8 @@ extends Node2D
 
 # ---- global illimination values
 @export var gi_skip_sprite_rendering: bool = false
-# ---- smoke
+# ---- config
+@export var grid_size_n:int = 64
 # ---- params
 @export_range(0.0, 1.0) var campfire_width: float = .2
 @export_range(1, 20, .1) var campfire_height: int = 2
@@ -73,13 +74,13 @@ func _ready():
 	camera = find_camera(get_tree().current_scene)
 	if not camera:
 		print("Camera2D not found")
-
-	var canvas_width = 128
-	var canvas_height = 128
+	
+	var canvas_width = grid_size_n
+	var canvas_height = grid_size_n
 	var sim_height = 1.0
 	c_scale = canvas_height / sim_height
 	var sim_width = canvas_width / c_scale
-	var num_cells = 128*128
+	var num_cells = grid_size_n*grid_size_n
 	h = sqrt(sim_width * sim_height / num_cells)
 	var num_x = floor(sim_width / h)
 	var num_y = floor(sim_height / h)
@@ -96,18 +97,18 @@ func _process(delta):
 		simulate_stam(delta)
 		if view_fire.visible and not gi_skip_sprite_rendering:
 			var t = rd.buffer_get_data(t_buffer).to_float32_array()
-			view_fire.update_shader_params(t, gi_skip_sprite_rendering)
+			view_fire.update_shader_params(t, grid_size_n)
 		if view_uv.visible:
 			var u = rd.buffer_get_data(u_buffer).to_float32_array()
 			var v = rd.buffer_get_data(v_buffer).to_float32_array()	
-			view_uv.update_shader_params(u, v)
+			view_uv.update_shader_params(u, v, grid_size_n)
 			#view_uv.update_shader_params(t, t)
 		if view_p.visible:
 			var p = rd.buffer_get_data(p_buffer).to_float32_array()	
-			view_p.update_shader_params(p)
+			view_p.update_shader_params(p, grid_size_n)
 		if view_div.visible:
 			var div = rd.buffer_get_data(div_buffer).to_float32_array()
-			view_div.update_shader_params(div)	
+			view_div.update_shader_params(div, grid_size_n)	
 
 
 func setup(num_x: int, num_y: int, h_val: float):

@@ -4,6 +4,7 @@
 code = "shader_type canvas_item;
 
 uniform float p_buffer[16384];
+uniform int grid_size_n = 64;
 uniform float color_scale = 1.;
 
 vec3 hsv2rgb(vec3 c) {
@@ -18,8 +19,8 @@ void fragment() {
 	//vec2 local_pos = VERTEX / SCREEN_PIXEL_SIZE;
     vec2 tex_coords = UV;
     // Scale UV coordinates to buffer size
-    int x = int(tex_coords.x * 128.0);
-    int y = int(tex_coords.y * 128.0);
+    int x = int(tex_coords.x * float(grid_size_n));
+    int y = int(tex_coords.y * float(grid_size_n));
 
     // Calculate the 1D index from 2D coordinates
     int idx = y * 128 + x;

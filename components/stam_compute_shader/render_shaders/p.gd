@@ -24,7 +24,7 @@ func _ready():
 		for child in get_children():
 			print("Child node: ", child.name)
 
-func update_shader_params(p:PackedFloat32Array):
+func update_shader_params(p:PackedFloat32Array, grid_size_n: int):
 	if toggle_reset_color_scale != _toggle_reset_color_scale:
 		var max_val = p[0]
 		for i in range(1, p.size()):
@@ -33,6 +33,7 @@ func update_shader_params(p:PackedFloat32Array):
 		_toggle_reset_color_scale = toggle_reset_color_scale
 	material.set_shader_parameter("color_scale", color_scale)
 	material.set_shader_parameter("p_buffer", p)
+	material.set_shader_parameter("grid_size_n", grid_size_n)
 	queue_redraw()
 
 func _on_toggle_timer_timeout():

@@ -17,7 +17,7 @@ func _ready():
 	else:
 		print("Error: ToggleTimer node not found.")
 
-func update_shader_params(u:PackedFloat32Array, v:PackedFloat32Array):
+func update_shader_params(u:PackedFloat32Array, v:PackedFloat32Array, grid_size_n: int):
 	if toggle_reset_color_scale != _toggle_reset_color_scale:
 		var max_u = u[0]
 		var max_v = v[0]
@@ -31,6 +31,7 @@ func update_shader_params(u:PackedFloat32Array, v:PackedFloat32Array):
 	material.set_shader_parameter("color_scale", color_scale)
 	material.set_shader_parameter("u_buffer", u)
 	material.set_shader_parameter("v_buffer", v)
+	material.set_shader_parameter("grid_size_n", grid_size_n)
 	queue_redraw()
 
 func _on_toggle_timer_timeout():

@@ -9,3 +9,4 @@
 [node name="Fire" parent="." instance=ExtResource("1_7ttr5")]
 position = Vector2(-7, 250)
 scale = Vector2(4, 4)
+grid_size_n = 128
