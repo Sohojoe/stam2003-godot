@@ -5,11 +5,6 @@ extends Node2D
 # ---- global illimination values
 @export var gi_skip_sprite_rendering: bool = false
 # ---- smoke
-@export var burning_obstacle: bool = true
-@export var burning_floor: bool = false
-@export var burning_campfire: bool = false
-@export var swirls: bool = true
-@export var paused: bool = false
 # ---- params
 @export_range(0.0, 1.0) var campfire_width: float = .2
 @export_range(1, 20, .1) var campfire_height: int = 2
@@ -20,6 +15,7 @@ extends Node2D
 @export var wind: Vector2 = Vector2.ZERO
 @export var min_dt: float = 1.0 / 60.0
 @export var max_dt: float = 1.0 / 120.0
+@export var paused: bool = false
 # ---- 
 
 # ----
@@ -30,11 +26,6 @@ extends Node2D
 @onready var view_p: Sprite2D = $view_p
 @onready var view_div: Sprite2D = $view_div
 @onready var editor_label: RichTextLabel = $EditorLabel
-
-
-const U_FIELD = 0
-const V_FIELD = 1
-const T_FIELD = 2
 
 var numX: int
 var numY: int
@@ -282,6 +273,15 @@ func cool_and_lift(dt: float):
 		
 	var compute_list = rd.compute_list_begin()
 	dispatch(compute_list, shader_name, uniform_set, pc_bytes)
+
+	# Apply boundary conditions to u and v
+	var shader_name_bnd_uv = "set_bnd_uv_open"
+	var uniform_set_bnd_uv = get_uniform_set([
+		shader_name_bnd_uv,
+		consts_buffer, 0,
+		u_buffer, 1,
+		v_buffer, 2])
+	dispatch(compute_list, shader_name_bnd_uv, uniform_set_bnd_uv)
 	rd.compute_list_end()
 
 func apply_ignition():
@@ -335,16 +335,6 @@ func project_s(num_iters: int):
 	
 	var compute_list = rd.compute_list_begin()
 
-	# HACK - doing this to address update_fire() not doing boundaries propery
-	# Apply boundary conditions to u and v
-	var shader_name_bnd_uv = "set_bnd_uv_open"
-	var uniform_set_bnd_uv = get_uniform_set([
-		shader_name_bnd_uv,
-		consts_buffer, 0,
-		u_buffer, 1,
-		v_buffer, 2])
-	dispatch(compute_list, shader_name_bnd_uv, uniform_set_bnd_uv)
-
 	# Compute divergence
 	var shader_name_div = "project_compute_divergence"
 	var uniform_set_div = get_uniform_set([
@@ -396,6 +386,12 @@ func project_s(num_iters: int):
 	dispatch(compute_list, shader_name_apply_p, uniform_set_apply_p)
 
 	# Apply boundary conditions to u and v
+	var shader_name_bnd_uv = "set_bnd_uv_open"
+	var uniform_set_bnd_uv = get_uniform_set([
+		shader_name_bnd_uv,
+		consts_buffer, 0,
+		u_buffer, 1,
+		v_buffer, 2])
 	dispatch(compute_list, shader_name_bnd_uv, uniform_set_bnd_uv)
 
 	# calculate_divergence_centered_grid
@@ -467,106 +463,3 @@ func handle_ignition():
 
 	# send to gpu
 	rd.buffer_update(i_buffer, 0, i.size() * 4, i.to_byte_array())
-
-
-
-#func update_fire(dt: float):
-	#var fire_cooling = 1.2 * dt
-	#var smoke_cooling = 0.3 * dt
-	#var lift = 3.0
-	#var acceleration = 6.0 * dt
-	#var kernel_radius = swirl_max_radius
-#
-	#var n = numY
-	#var max_x = (numX - 1) * h
-	#var max_y = (numY - 1) * h
-#
-#
-	## cool temperature, add lift to v
-	#var min_r = 0.85 * obstacle_radius
-	#var max_r = obstacle_radius + h
-	#var cell: int = 0
-	#var queued_new_swirls = []
-	#
-	#var step = 3
-	#var normed_1 = 1 * (60.0 * dt);
-#
-	#var campfire_start = int((numX/2.)-numX/2.*campfire_width)
-	#var campfire_end = int((numX/2.)+numX/2.*campfire_width)
-	#var center = (campfire_start + campfire_end) / 2.
-	#var max_distance = (campfire_end - campfire_start) / 2.
-	#if burning_campfire:
-		#for row in range(campfire_height):
-			#for col in range(campfire_start, campfire_end):
-				#t[row * n + col] = 1.0
-				#u[row * n + col] = 0.0
-				#v[row * n + col] = 0.0 #0.30
-#
-#
-#
-	#if cpu_fire:
-		#for row in range(numY):
-			#for col in range(numX):
-				#cell = row * numX + col
-				#var t_val = t[cell]
-				#var cooling = smoke_cooling if (t_val < 0.3) else fire_cooling
-				#t_val = max(t_val - cooling, 0.0)
-				#t[cell] = t_val
-				##var u_val = u[cell]
-				#var v_val = v[cell]
-				#var target_v = t_val * lift
-				#v[cell] += (target_v - v_val) * acceleration
-				#
-				#if t_val > 0.8:				
-					#var chance = (1.0 - (t_val -0.8) * 10.0) * randf()
-					#if chance > 1-(add_perturbance_probability * normed_1):
-						#var u_perb = (-1.0 + 2.0 * randf()) * 1
-						#var v_perb = (-1.0 + 2.0 * randf()) * 1
-						#u_perb = -step if u_perb < -0.333 else step if u_perb > 0.333 else 0.
-						#v_perb = -step if v_perb < -0.333 else step if v_perb > 0.333 else 0.
-						#u[cell] += u_perb
-						#v[cell] += v_perb
-#
-#
-#
-#
-#
-#func sample_field(x: float, y: float, field: int) -> float:
-	#var h1 = 1.0 / h
-	#var h2 = 0.5 * h
-#
-	#x = clamp(x, h, numX * h)
-	#y = clamp(y, h, numY * h)
-#
-	#var dx = 0.0
-	#var dy = 0.0
-#
-	#var f: PackedFloat32Array
-	#if field == U_FIELD:
-		#f = u
-		#dy = h2
-	#elif field == V_FIELD:
-		#f = v
-		#dx = h2
-	#elif field == T_FIELD:
-		#f = t
-		#dx = h2
-		#dy = h2
-#
-	#var x0 = min(floor((x - dx) * h1), numX - 1)
-	#var tx = ((x - dx) - x0 * h) * h1
-	#var x1 = min(x0 + 1, numX - 1)
-#
-	#var y0 = min(floor((y - dy) * h1), numY - 1)
-	#var ty = ((y - dy) - y0 * h) * h1
-	#var y1 = min(y0 + 1, numY - 1)
-#
-	#var sx = 1.0 - tx
-	#var sy = 1.0 - ty
-#
-	#y0 *= numX 
-	#y1 *= numX 
-	#return sx * sy * f[x0 + y0] + \
-		   #tx * sy * f[x1 + y0] + \
-		   #tx * ty * f[x1 + y1] + \
-		   #sx * ty * f[x0 + y1]
