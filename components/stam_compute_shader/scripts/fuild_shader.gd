@@ -40,12 +40,7 @@ var numX: int
 var numY: int
 var h: float
 
-var u: PackedFloat32Array
-var v: PackedFloat32Array
-var div: PackedFloat32Array
-var p: PackedFloat32Array
 var s: PackedFloat32Array
-var t: PackedFloat32Array
 var i: PackedFloat32Array
 
 var rd: RenderingDevice
@@ -109,18 +104,18 @@ func _process(delta):
 		delta = clamp(delta, min_dt, max_dt)
 		simulate_stam(delta)
 		if view_fire.visible and not gi_skip_sprite_rendering:
-			t = rd.buffer_get_data(t_buffer).to_float32_array()
+			var t = rd.buffer_get_data(t_buffer).to_float32_array()
 			view_fire.update_shader_params(t, gi_skip_sprite_rendering)
 		if view_uv.visible:
-			u = rd.buffer_get_data(u_buffer).to_float32_array()
-			v = rd.buffer_get_data(v_buffer).to_float32_array()	
+			var u = rd.buffer_get_data(u_buffer).to_float32_array()
+			var v = rd.buffer_get_data(v_buffer).to_float32_array()	
 			view_uv.update_shader_params(u, v)
 			#view_uv.update_shader_params(t, t)
 		if view_p.visible:
-			p = rd.buffer_get_data(p_buffer).to_float32_array()	
+			var p = rd.buffer_get_data(p_buffer).to_float32_array()	
 			view_p.update_shader_params(p)
 		if view_div.visible:
-			div = rd.buffer_get_data(div_buffer).to_float32_array()
+			var div = rd.buffer_get_data(div_buffer).to_float32_array()
 			view_div.update_shader_params(div)	
 
 
@@ -128,42 +123,34 @@ func setup(num_x: int, num_y: int, h_val: float):
 	numX = num_x
 	numY = num_y
 	h = h_val
-	u = PackedFloat32Array()
-	u.resize(numX * numY)
-	v = PackedFloat32Array()
-	v.resize(numX * numY)
-	div = PackedFloat32Array()
-	div.resize(numX * numY)	
-	p = PackedFloat32Array()
-	p.resize(numX * numY)
 	s = PackedFloat32Array()
 	s.resize(numX * numY)
-	t = PackedFloat32Array()
-	t.resize(numX * numY)
-	t.fill(0.0)
 	s.fill(1.0)
 	i = PackedFloat32Array()
 	i.resize(numX * numY)
 	i.fill(0.0)
 	
 	rd = RenderingServer.create_local_rendering_device()
+	var h2 = 0.5 * h
 
 	var consts_buffer_bytes := PackedInt32Array([numX, numY]).to_byte_array()
-	var h2 = 0.5 * h
 	consts_buffer_bytes.append_array(PackedFloat32Array([h, h2]).to_byte_array())
 	consts_buffer_bytes.resize(ceil(consts_buffer_bytes.size() / 16.0) * 16)
 	consts_buffer = rd.storage_buffer_create(consts_buffer_bytes.size(), consts_buffer_bytes)
-	u_buffer = rd.storage_buffer_create(u.size() * 4, u.to_byte_array())
-	u_buffer_prev = rd.storage_buffer_create(u.size() * 4, u.to_byte_array())
-	v_buffer = rd.storage_buffer_create(v.size() * 4, v.to_byte_array())
-	v_buffer_prev = rd.storage_buffer_create(v.size() * 4, v.to_byte_array())
-	s_buffer = rd.storage_buffer_create(s.size() * 4, s.to_byte_array())
-	p_buffer = rd.storage_buffer_create(p.size() * 4, p.to_byte_array())
-	p_buffer_prev = rd.storage_buffer_create(p.size() * 4, p.to_byte_array())
-	div_buffer = rd.storage_buffer_create(div.size() * 4, div.to_byte_array())
-	t_buffer = rd.storage_buffer_create(t.size() * 4, t.to_byte_array())
-	t_buffer_prev = rd.storage_buffer_create(t.size() * 4, t.to_byte_array())
-	i_buffer = rd.storage_buffer_create(t.size() * 4, t.to_byte_array())
+
+	var grid_of_bytes_0 = i.to_byte_array()
+	var grid_of_bytes_1 = s.to_byte_array()
+	u_buffer = rd.storage_buffer_create			(grid_of_bytes_0.size(), grid_of_bytes_0)
+	u_buffer_prev = rd.storage_buffer_create		(grid_of_bytes_0.size(), grid_of_bytes_0)
+	v_buffer = rd.storage_buffer_create			(grid_of_bytes_0.size(), grid_of_bytes_0)
+	v_buffer_prev = rd.storage_buffer_create		(grid_of_bytes_0.size(), grid_of_bytes_0)
+	p_buffer = rd.storage_buffer_create			(grid_of_bytes_0.size(), grid_of_bytes_0)
+	p_buffer_prev = rd.storage_buffer_create		(grid_of_bytes_0.size(), grid_of_bytes_0)
+	div_buffer = rd.storage_buffer_create		(grid_of_bytes_0.size(), grid_of_bytes_0)
+	t_buffer = rd.storage_buffer_create			(grid_of_bytes_0.size(), grid_of_bytes_0)
+	t_buffer_prev = rd.storage_buffer_create		(grid_of_bytes_0.size(), grid_of_bytes_0)
+	i_buffer = rd.storage_buffer_create			(grid_of_bytes_0.size(), grid_of_bytes_0)
+	s_buffer = rd.storage_buffer_create			(grid_of_bytes_1.size(), grid_of_bytes_1)
 
 	for key in shader_file_names.keys():
 		var file_name = shader_file_names[key]
