@@ -22,13 +22,8 @@ extends Node2D
 # ----
 # ----
 
-@onready var view_fire: Sprite2D = $view_fire2
-@onready var view_uv: Sprite2D = $view_uv2
-@onready var view_p: Sprite2D = $view_p2
-@onready var view_div: Sprite2D = $view_div2
+@onready var view_gpu_compute_shader: Sprite2D = $"view gpu compute shader"
 @onready var editor_label: RichTextLabel = $EditorLabel2
-
-
 
 var c_scale = 1.0
 var camera: Camera2D = null
@@ -46,6 +41,7 @@ var shader_file_names = {
 	"calculate_divergence_centered_grid": "res://components/stam_compute_shader/shaders/calculate_divergence_centered_grid.glsl",
 	"cool_and_lift": "res://components/stam_compute_shader/shaders/cool_and_lift.glsl",
 	"apply_ignition": "res://components/stam_compute_shader/shaders/apply_ignition.glsl",
+	"view_t": "res://components/stam_compute_shader/shaders/view_t.glsl",
 }
 
 func _ready():
@@ -132,6 +128,8 @@ var t_buffer_prev
 var div_buffer
 var i_buffer
 
+var view_texture
+
 var ignition_changed:bool = false
 
 
@@ -168,6 +166,22 @@ func initialize_compute_code(num_x: int, num_y: int, h_val: float) -> void:
 	i_buffer = rd.storage_buffer_create			(grid_of_bytes_0.size(), grid_of_bytes_0)
 	s_buffer = rd.storage_buffer_create			(grid_of_bytes_1.size(), grid_of_bytes_1)
 
+
+	var fmt3 = RDTextureFormat.new()
+	fmt3.width = numX
+	fmt3.height = numY
+	fmt3.format = RenderingDevice.DATA_FORMAT_R32G32B32A32_SFLOAT
+	fmt3.usage_bits = RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | RenderingDevice.TEXTURE_USAGE_CAN_COPY_TO_BIT | RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT | RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT	
+	var view3 = RDTextureView.new()
+	#var pfa = PackedFloat32Array()
+	#pfa.resize(numX*numY*4)
+	#pfa.fill(1)
+	view_texture = rd.texture_create(fmt3, view3)
+	
+	var texture_rd = Texture2DRD.new()
+	texture_rd.texture_rd_rid = view_texture
+	view_gpu_compute_shader.texture = texture_rd
+	
 	for key in shader_file_names.keys():
 		var file_name = shader_file_names[key]
 		var shader_file = load(file_name)
@@ -192,6 +206,7 @@ func simulate_stam(dt: float) -> void:
 	stam_advect_temperature(dt)
 	stam_advect_vel(dt)
 	project_s(num_iters_projection)
+	view_t()
 
 	# rd.submit()
 	#--- wait for gpu
@@ -203,7 +218,11 @@ func simulate_stam(dt: float) -> void:
 #--- helper functions
 func get_uniform(buffer, binding: int):
 	var rd_uniform = RDUniform.new()
-	rd_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	# handle differnt types of buffers
+	if buffer == view_texture:
+		rd_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
+	else:
+		rd_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
 	rd_uniform.binding = binding
 	rd_uniform.add_id(buffer)
 	return rd_uniform
@@ -466,22 +485,21 @@ func handle_ignition_gpu():
 func mark_ignition_changed() -> void:
 	ignition_changed = true
 
+func view_t():
+	var shader_name = "view_t"
+	var uniform_set = get_uniform_set([
+		shader_name,
+		consts_buffer, 0,
+		t_buffer, 8,
+		view_texture, 20])
+		
+	var compute_list = rd.compute_list_begin()
+	dispatch(compute_list, shader_name, uniform_set)
+	rd.compute_list_end()
+
 # -----------------------------------------------------------------------------------
 # UI and debug vars and code
 # 
 
 func handle_displaying_output():
-	if view_fire.visible and not gi_skip_sprite_rendering:
-		var t = rd.buffer_get_data(t_buffer).to_float32_array()
-		view_fire.update_shader_params(t, grid_size_n)
-	if view_uv.visible:
-		var u = rd.buffer_get_data(u_buffer).to_float32_array()
-		var v = rd.buffer_get_data(v_buffer).to_float32_array()	
-		view_uv.update_shader_params(u, v, grid_size_n)
-		#view_uv.update_shader_params(t, t)
-	if view_p.visible:
-		var p = rd.buffer_get_data(p_buffer).to_float32_array()	
-		view_p.update_shader_params(p, grid_size_n)
-	if view_div.visible:
-		var div = rd.buffer_get_data(div_buffer).to_float32_array()
-		view_div.update_shader_params(div, grid_size_n)	
+	pass

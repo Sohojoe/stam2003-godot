@@ -1,62 +1,15 @@
-[gd_scene load_steps=11 format=3 uid="uid://c3m5l2lt31esr"]
+[gd_scene load_steps=3 format=3 uid="uid://c3m5l2lt31esr"]
 
 [ext_resource type="Script" path="res://components/stam_compute_shader/scripts/fuild_compute_shader_gpu.gd" id="1_31lor"]
-[ext_resource type="Material" uid="uid://b1g7kww3p0gxc" path="res://components/stam_compute_shader/render_shaders/fire_shader_material.tres" id="2_oirph"]
 [ext_resource type="Texture2D" uid="uid://cvvqd44h3uofo" path="res://components/stam_compute_shader/assets/blank.jpg" id="3_fv3lb"]
-[ext_resource type="Script" path="res://components/stam_compute_shader/render_shaders/fire.gd" id="4_pvdhh"]
-[ext_resource type="Material" uid="uid://daspc1brf7s5j" path="res://components/stam_compute_shader/render_shaders/uv_shader_material.tres" id="5_a8ciy"]
-[ext_resource type="Script" path="res://components/stam_compute_shader/render_shaders/uv.gd" id="6_v5jen"]
-[ext_resource type="Material" uid="uid://bualklk57qe7i" path="res://components/stam_compute_shader/render_shaders/p_shader_material.tres" id="7_oidxk"]
-[ext_resource type="Script" path="res://components/stam_compute_shader/render_shaders/p.gd" id="8_kilvv"]
-[ext_resource type="Material" uid="uid://hcbvjpw1wf0r" path="res://components/stam_compute_shader/render_shaders/div_shader_material.tres" id="9_4ddql"]
-[ext_resource type="Script" path="res://components/stam_compute_shader/render_shaders/div.gd" id="10_iq8jk"]
 
 [node name="Fire GPU Compute Shader" type="Node2D"]
 script = ExtResource("1_31lor")
 
-[node name="view_fire2" type="Sprite2D" parent="."]
-material = ExtResource("2_oirph")
-position = Vector2(2.08165e-12, -64)
+[node name="view gpu compute shader" type="Sprite2D" parent="."]
 scale = Vector2(2, 2)
 texture = ExtResource("3_fv3lb")
 flip_v = true
-script = ExtResource("4_pvdhh")
-
-[node name="view_uv2" type="Sprite2D" parent="."]
-visible = false
-material = ExtResource("5_a8ciy")
-position = Vector2(2.08165e-12, -64)
-scale = Vector2(2, 2)
-texture = ExtResource("3_fv3lb")
-flip_v = true
-script = ExtResource("6_v5jen")
-
-[node name="ToggleTimer" type="Timer" parent="view_uv2"]
-
-[node name="view_p2" type="Sprite2D" parent="."]
-visible = false
-material = ExtResource("7_oidxk")
-position = Vector2(2.08165e-12, -64)
-scale = Vector2(2, 2)
-texture = ExtResource("3_fv3lb")
-flip_v = true
-script = ExtResource("8_kilvv")
-color_scale = 0.638
-
-[node name="ToggleTimer" type="Timer" parent="view_p2"]
-
-[node name="view_div2" type="Sprite2D" parent="."]
-visible = false
-material = ExtResource("9_4ddql")
-position = Vector2(2.08165e-12, -64)
-scale = Vector2(2, 2)
-texture = ExtResource("3_fv3lb")
-flip_v = true
-script = ExtResource("10_iq8jk")
-color_scale = 0.116
-auto_reset_color_scale = false
-
-[node name="ToggleTimer" type="Timer" parent="view_div2"]
 
 [node name="EditorLabel2" type="RichTextLabel" parent="."]
 layout_direction = 1
