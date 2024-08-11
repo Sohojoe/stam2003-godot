@@ -173,14 +173,12 @@ func initialize_compute_code(num_x: int, num_y: int, h_val: float) -> void:
 	fmt3.format = RenderingDevice.DATA_FORMAT_R32G32B32A32_SFLOAT
 	fmt3.usage_bits = RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | RenderingDevice.TEXTURE_USAGE_CAN_COPY_TO_BIT | RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT | RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT	
 	var view3 = RDTextureView.new()
-	#var pfa = PackedFloat32Array()
-	#pfa.resize(numX*numY*4)
-	#pfa.fill(1)
 	view_texture = rd.texture_create(fmt3, view3)
-	
 	var texture_rd = Texture2DRD.new()
 	texture_rd.texture_rd_rid = view_texture
 	view_gpu_compute_shader.texture = texture_rd
+	var view_scale = Vector2.ONE * (128.0 / numY)
+	view_gpu_compute_shader.scale = view_scale
 	
 	for key in shader_file_names.keys():
 		var file_name = shader_file_names[key]
@@ -193,8 +191,6 @@ func initialize_compute_code(num_x: int, num_y: int, h_val: float) -> void:
 
 
 func simulate_stam(dt: float) -> void:
-	#--- CPU work
-
 	#--- GPU work
 	handle_ignition_gpu()
 	# integrate_s(dt, wind)
@@ -206,14 +202,9 @@ func simulate_stam(dt: float) -> void:
 	stam_advect_temperature(dt)
 	stam_advect_vel(dt)
 	project_s(num_iters_projection)
-	view_t()
+	if not gi_skip_sprite_rendering:
+		view_t()
 
-	# rd.submit()
-	#--- wait for gpu
-	# wait_for_gpu() # dont wait when on rendering thread
-
-# func wait_for_gpu():
-# 	rd.sync()
 
 #--- helper functions
 func get_uniform(buffer, binding: int):
