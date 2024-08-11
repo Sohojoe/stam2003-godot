@@ -45,9 +45,10 @@ vec4 get_fire_color(float val) {
 }
 
 void main() {
-
-    uint idx = gl_GlobalInvocationID.x;
-    uint idy = gl_GlobalInvocationID.y;
+    vec2 fragCoord=gl_GlobalInvocationID.xy;
+    ivec2 ifragCoord=ivec2(fragCoord.xy);
+    uint idx = ifragCoord.x;
+    uint idy = ifragCoord.y;
     uint N = consts.numX -1;
 
     if (idx > N || idy > N) return;
@@ -56,8 +57,6 @@ void main() {
     float temp = t_buffer.t[cell];
     vec4 color = get_fire_color(temp);
 
-    vec2 fragCoord=gl_GlobalInvocationID.xy;
-    ivec2 ifragCoord=ivec2(fragCoord.xy);
 
     imageStore(output_image, ifragCoord, color);
 }

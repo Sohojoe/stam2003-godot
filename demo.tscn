@@ -15,3 +15,5 @@ grid_size_n = 128
 
 [node name="Fire GPU Compute Shader" parent="." instance=ExtResource("3_mqjyj")]
 scale = Vector2(4, 4)
+di_debug_view = 0
+grid_size_n = 512

@@ -3,7 +3,9 @@ class_name FluidShaderGpu
 extends Node2D
 
 # ---- global illimination values
-@export var gi_skip_sprite_rendering: bool = false
+@export var gi_rendering: bool = false
+@export var di_debug_view: int = 1
+@export_range(0.0, 1.0) var debug_div_color_scale: float = 0.004
 # ---- config
 @export var grid_size_n:int = 64
 # ---- params
@@ -42,6 +44,7 @@ var shader_file_names = {
 	"cool_and_lift": "res://components/stam_compute_shader/shaders/cool_and_lift.glsl",
 	"apply_ignition": "res://components/stam_compute_shader/shaders/apply_ignition.glsl",
 	"view_t": "res://components/stam_compute_shader/shaders/view_t.glsl",
+	"view_div": "res://components/stam_compute_shader/shaders/view_div.glsl",
 }
 
 func _ready():
@@ -202,8 +205,12 @@ func simulate_stam(dt: float) -> void:
 	stam_advect_temperature(dt)
 	stam_advect_vel(dt)
 	project_s(num_iters_projection)
-	if not gi_skip_sprite_rendering:
-		view_t()
+	if not gi_rendering:
+		match di_debug_view:
+			1:
+				view_div()
+			_:
+				view_t()
 
 
 #--- helper functions
@@ -486,6 +493,21 @@ func view_t():
 		
 	var compute_list = rd.compute_list_begin()
 	dispatch(compute_list, shader_name, uniform_set)
+	rd.compute_list_end()
+
+func view_div():
+	var shader_name = "view_div"
+	var uniform_set = get_uniform_set([
+		shader_name,
+		consts_buffer, 0,
+		div_buffer, 5,
+		view_texture, 20])
+
+	var pc_bytes := PackedFloat32Array([debug_div_color_scale]).to_byte_array()
+	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
+
+	var compute_list = rd.compute_list_begin()
+	dispatch(compute_list, shader_name, uniform_set, pc_bytes)
 	rd.compute_list_end()
 
 # -----------------------------------------------------------------------------------
