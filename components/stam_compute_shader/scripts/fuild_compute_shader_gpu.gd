@@ -4,8 +4,9 @@ extends Node2D
 
 # ---- global illimination values
 @export var gi_rendering: bool = false
-@export var di_debug_view: int = 1
+@export var di_debug_view: int = 0
 @export_range(0.0, 1.0) var debug_div_color_scale: float = 0.004
+@export_range(0.0, 0.010) var debug_p_color_scale: float = 0.0003
 # ---- config
 @export var grid_size_n:int = 64
 # ---- params
@@ -45,6 +46,7 @@ var shader_file_names = {
 	"apply_ignition": "res://components/stam_compute_shader/shaders/apply_ignition.glsl",
 	"view_t": "res://components/stam_compute_shader/shaders/view_t.glsl",
 	"view_div": "res://components/stam_compute_shader/shaders/view_div.glsl",
+	"view_p": "res://components/stam_compute_shader/shaders/view_p.glsl",
 }
 
 func _ready():
@@ -209,6 +211,8 @@ func simulate_stam(dt: float) -> void:
 		match di_debug_view:
 			1:
 				view_div()
+			2:
+				view_p()
 			_:
 				view_t()
 
@@ -504,6 +508,21 @@ func view_div():
 		view_texture, 20])
 
 	var pc_bytes := PackedFloat32Array([debug_div_color_scale]).to_byte_array()
+	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
+
+	var compute_list = rd.compute_list_begin()
+	dispatch(compute_list, shader_name, uniform_set, pc_bytes)
+	rd.compute_list_end()
+
+func view_p():
+	var shader_name = "view_p"
+	var uniform_set = get_uniform_set([
+		shader_name,
+		consts_buffer, 0,
+		p_buffer, 4,
+		view_texture, 20])
+
+	var pc_bytes := PackedFloat32Array([debug_p_color_scale]).to_byte_array()
 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
 
 	var compute_list = rd.compute_list_begin()
