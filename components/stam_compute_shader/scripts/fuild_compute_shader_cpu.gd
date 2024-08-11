@@ -1,4 +1,4 @@
-class_name FluidShader
+class_name FluidShaderCpu
 #extends CanvasLayer
 extends Node2D
 
