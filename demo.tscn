@@ -1,12 +1,17 @@
-[gd_scene load_steps=2 format=3 uid="uid://dta08rssahtkw"]
+[gd_scene load_steps=3 format=3 uid="uid://dta08rssahtkw"]
 
-[ext_resource type="PackedScene" uid="uid://p0chnegfgihs" path="res://components/stam_compute_shader/fire.tscn" id="1_7ttr5"]
+[ext_resource type="PackedScene" uid="uid://p0chnegfgihs" path="res://components/stam_compute_shader/fire_cpu.tscn" id="1_7ttr5"]
+[ext_resource type="PackedScene" uid="uid://c3m5l2lt31esr" path="res://components/stam_compute_shader/fire_gpu.tscn" id="3_mqjyj"]
 
 [node name="Node2D" type="Node2D"]
 
 [node name="Camera2D" type="Camera2D" parent="."]
 
 [node name="Fire" parent="." instance=ExtResource("1_7ttr5")]
+visible = false
 position = Vector2(-7, 250)
 scale = Vector2(4, 4)
 grid_size_n = 128
+
+[node name="Fire GPU Compute Shader" parent="." instance=ExtResource("3_mqjyj")]
+scale = Vector2(4, 4)
