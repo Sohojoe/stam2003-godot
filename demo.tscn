@@ -15,5 +15,4 @@ grid_size_n = 128
 
 [node name="Fire GPU Compute Shader" parent="." instance=ExtResource("3_mqjyj")]
 scale = Vector2(4, 4)
-debug_p_color_scale = 0.00145
-grid_size_n = 256
+grid_size_n = 512
