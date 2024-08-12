@@ -31,6 +31,7 @@ extends Node2D
 
 var c_scale = 1.0
 var camera: Camera2D = null
+var grid_size_n_prev: int = -1
 
 var shader_file_names = {
 	"apply_force": "res://components/stam_compute_shader/shaders/apply_force.glsl",
@@ -56,16 +57,8 @@ func _ready():
 	if not camera:
 		print("Camera2D not found")
 	
-	var canvas_width = grid_size_n
-	var canvas_height = grid_size_n
-	var sim_height = 1.0
-	c_scale = canvas_height / sim_height
-	var sim_width = canvas_width / c_scale
-	var num_cells = grid_size_n*grid_size_n
-	h = sqrt(sim_width * sim_height / num_cells)
-	var num_x = floor(sim_width / h)
-	var num_y = floor(sim_height / h)
-	RenderingServer.call_on_render_thread(initialize_compute_code.bind(num_x, num_y, h))
+	RenderingServer.call_on_render_thread(initialize_compute_code.bind(grid_size_n, h))
+	grid_size_n_prev = grid_size_n
 	# disbale 	editor_label
 	editor_label.visible = false
 
@@ -76,6 +69,9 @@ func _process(delta):
 	if not paused:
 		delta = clamp(delta, min_dt, max_dt)
 		handle_ignition_cpu()
+		if grid_size_n != grid_size_n_prev:
+			RenderingServer.call_on_render_thread(initialize_compute_code.bind(grid_size_n, h))
+			grid_size_n_prev = grid_size_n
 		RenderingServer.call_on_render_thread(simulate_stam.bind(delta))
 		handle_displaying_output()
 
@@ -140,9 +136,18 @@ var view_texture
 var ignition_changed:bool = false
 
 
-func initialize_compute_code(num_x: int, num_y: int, h_val: float) -> void:
-	numX = num_x
-	numY = num_y
+func initialize_compute_code(grid_size: int, h_val: float) -> void:
+	free_previous_resources() 
+
+	var canvas_width = grid_size
+	var canvas_height = grid_size
+	var sim_height = 1.0
+	c_scale = canvas_height / sim_height
+	var sim_width = canvas_width / c_scale
+	var num_cells = grid_size*grid_size
+	h = sqrt(sim_width * sim_height / num_cells)
+	numX= floor(sim_width / h)
+	numY = floor(sim_height / h)
 	h = h_val
 	s = PackedFloat32Array()
 	s.resize(numX * numY)
@@ -183,6 +188,7 @@ func initialize_compute_code(num_x: int, num_y: int, h_val: float) -> void:
 	view_texture = rd.texture_create(fmt3, view3)
 	var texture_rd = Texture2DRD.new()
 	texture_rd.texture_rd_rid = view_texture
+	view_gpu_compute_shader.texture = null
 	view_gpu_compute_shader.texture = texture_rd
 	var view_scale = Vector2.ONE * (128.0 / numY)
 	view_gpu_compute_shader.scale = view_scale
@@ -195,6 +201,47 @@ func initialize_compute_code(num_x: int, num_y: int, h_val: float) -> void:
 		shaders[key] = shader
 		pipelines[key] = rd.compute_pipeline_create(shader)
 
+
+func free_previous_resources():
+
+	if consts_buffer:
+		rd.free_rid(consts_buffer)
+	if u_buffer:
+		rd.free_rid(u_buffer)
+	if u_buffer_prev:
+		rd.free_rid(u_buffer_prev)
+	if v_buffer:
+		rd.free_rid(v_buffer)
+	if v_buffer_prev:
+		rd.free_rid(v_buffer_prev)
+	if p_buffer:
+		rd.free_rid(p_buffer)
+	if p_buffer_prev:
+		rd.free_rid(p_buffer_prev)
+	if div_buffer:
+		rd.free_rid(div_buffer)
+	if t_buffer:
+		rd.free_rid(t_buffer)
+	if t_buffer_prev:
+		rd.free_rid(t_buffer_prev)
+	if i_buffer:
+		rd.free_rid(i_buffer)
+	if s_buffer:
+		rd.free_rid(s_buffer)
+	if view_texture:
+		view_gpu_compute_shader.texture = null
+		rd.free_rid(view_texture)
+	
+	
+	for key in shaders.keys():
+		rd.free_rid(shaders[key])
+	shaders.clear()
+	
+	#for key in pipelines.keys():
+		#if pipelines[key] and RenderingServer.has_rid(pipelines[key]):
+			#rd.free_rid(pipelines[key])
+	pipelines.clear()
+	uniform_sets.clear()
 
 
 func simulate_stam(dt: float) -> void:
