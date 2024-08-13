@@ -10,11 +10,16 @@
 
 [node name="Fire CPU Compute Shader" parent="." instance=ExtResource("1_7ttr5")]
 visible = false
-scale = Vector2(4, 4)
 grid_size_n = 128
+view_texture_size = 4096
 
 [node name="Fire GPU Compute Shader" parent="." instance=ExtResource("3_mqjyj")]
-scale = Vector2(4, 4)
-grid_size_n = 128
+scale = Vector2(0.6, 0.6)
 
 [node name="simple_ui" parent="." instance=ExtResource("3_hwi7c")]
+title_text = "Stam2003 reproduction in Godot
+
+1 = cycle rendering  modes
+2 = cycle grid size
+3 = debug view
+4 = cycle debug view"

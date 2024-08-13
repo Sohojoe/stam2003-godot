@@ -18,6 +18,7 @@ var grid_sizes = [
 
 @export var mode:int = 0
 @export var grid_size_idx:int = 0
+@export var debug_view:int = 1
 
 func _ready() -> void:
 	simple_ui = get_tree().current_scene.get_node("simple_ui")
@@ -36,16 +37,33 @@ func handle_input():
 		cycle_mode()
 	if Input.is_action_just_pressed("cycle_grid_size"):
 		cycle_grid_size()
-
+	if Input.is_action_just_pressed("cycle_debug_view"):
+		cycle_debug_view()
+	if Input.is_action_pressed("debug_view"):
+		fire_gpu_compute_shader.di_debug_view = debug_view
+		#fire_cpu_compute_shader.di_debug_view = debug_view
+	else:
+		fire_gpu_compute_shader.di_debug_view = 0
+		#fire_cpu_compute_shader.di_debug_view = 0
 
 func update_debug():
 	if mode == 0:
 		var s = " mode: fire_gpu_compute_shader"
 		s = s+"\n grid size: " + str(fire_gpu_compute_shader.grid_size_n)
+		if fire_gpu_compute_shader.di_debug_view == 1:
+			s = s+"\n debug view: div (divergance)"
+		elif fire_gpu_compute_shader.di_debug_view == 2:
+			s = s+"\n debug view: p (presure)"
+		elif fire_gpu_compute_shader.di_debug_view == 3:
+			s = s+"\n debug view: uv (x,y velocity)"
+		else:
+			s = s+"\n debug view: none"
+
 		simple_ui.set_debug_output_text(s)
 	elif mode == 1:
 		var s = " mode: fire_cpu_compute_shader"
 		s = s+"\n grid size: " + str(fire_cpu_compute_shader.grid_size_n)
+		
 		simple_ui.set_debug_output_text(s)
 		
 
@@ -72,3 +90,8 @@ func cycle_grid_size():
 func set_grid_size():
 	fire_gpu_compute_shader.grid_size_n = grid_sizes[grid_size_idx]
 	fire_cpu_compute_shader.grid_size_n = grid_sizes[grid_size_idx]
+
+func cycle_debug_view():
+	debug_view += 1
+	if debug_view > 3:
+		debug_view = 1

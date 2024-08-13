@@ -31,7 +31,6 @@ extends Node2D
 
 var c_scale = 1.0
 var camera: Camera2D = null
-var grid_size_n_prev: int = -1
 
 var shader_file_names = {
 	"apply_force": "res://components/stam_compute_shader/shaders/apply_force.glsl",
@@ -58,7 +57,6 @@ func _ready():
 		print("Camera2D not found")
 	
 	RenderingServer.call_on_render_thread(initialize_compute_code.bind(grid_size_n, h))
-	grid_size_n_prev = grid_size_n
 	# disbale 	editor_label
 	editor_label.visible = false
 
@@ -69,10 +67,7 @@ func _process(delta):
 	if not paused:
 		delta = clamp(delta, min_dt, max_dt)
 		handle_ignition_cpu()
-		if grid_size_n != grid_size_n_prev:
-			RenderingServer.call_on_render_thread(initialize_compute_code.bind(grid_size_n, h))
-			grid_size_n_prev = grid_size_n
-		RenderingServer.call_on_render_thread(simulate_stam.bind(delta))
+		RenderingServer.call_on_render_thread(render_thread_update.bind(delta, grid_size_n, h))
 		handle_displaying_output()
 
 func find_camera(node: Node) -> Camera2D:
@@ -131,13 +126,14 @@ var t_buffer_prev
 var div_buffer
 var i_buffer
 
-var view_texture
 
 var ignition_changed:bool = false
-
+var grid_size_n_prev: int = -1
 
 func initialize_compute_code(grid_size: int, h_val: float) -> void:
 	free_previous_resources() 
+	
+	grid_size_n_prev = grid_size
 
 	var canvas_width = grid_size
 	var canvas_height = grid_size
@@ -159,7 +155,9 @@ func initialize_compute_code(grid_size: int, h_val: float) -> void:
 	rd = RenderingServer.get_rendering_device()
 	var h2 = 0.5 * h
 
-	var consts_buffer_bytes := PackedInt32Array([numX, numY]).to_byte_array()
+	var view_texture_size = view_gpu_compute_shader.view_texture_size
+
+	var consts_buffer_bytes := PackedInt32Array([numX, numY, view_texture_size, view_texture_size]).to_byte_array()
 	consts_buffer_bytes.append_array(PackedFloat32Array([h, h2]).to_byte_array())
 	consts_buffer_bytes.resize(ceil(consts_buffer_bytes.size() / 16.0) * 16)
 	consts_buffer = rd.storage_buffer_create(consts_buffer_bytes.size(), consts_buffer_bytes)
@@ -179,25 +177,6 @@ func initialize_compute_code(grid_size: int, h_val: float) -> void:
 	s_buffer = rd.storage_buffer_create			(grid_of_bytes_1.size(), grid_of_bytes_1)
 
 
-	var fmt3 = RDTextureFormat.new()
-	fmt3.width = numX
-	fmt3.height = numY
-	fmt3.format = RenderingDevice.DATA_FORMAT_R32G32B32A32_SFLOAT
-	fmt3.usage_bits = RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
-			RenderingDevice.TEXTURE_USAGE_CAN_COPY_TO_BIT | \
-			RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT | \
-			RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT	
-	var view3 = RDTextureView.new()
-	var pixel_data = PackedByteArray()
-	pixel_data.resize(numX * numY*4*4)
-	pixel_data.fill(1)
-	view_texture = rd.texture_create(fmt3, view3, [pixel_data])
-	var texture_rd = Texture2DRD.new()
-	texture_rd.texture_rd_rid = view_texture
-	view_gpu_compute_shader.texture = null
-	view_gpu_compute_shader.texture = texture_rd
-	var view_scale = Vector2.ONE * (128.0 / numY)
-	view_gpu_compute_shader.scale = view_scale
 	
 	for key in shader_file_names.keys():
 		var file_name = shader_file_names[key]
@@ -234,9 +213,6 @@ func free_previous_resources():
 		rd.free_rid(i_buffer)
 	if s_buffer:
 		rd.free_rid(s_buffer)
-	if view_texture:
-		view_gpu_compute_shader.texture = null
-		rd.free_rid(view_texture)
 	
 	
 	for key in shaders.keys():
@@ -249,6 +225,11 @@ func free_previous_resources():
 	pipelines.clear()
 	uniform_sets.clear()
 
+func render_thread_update(delta: float, cur_grid_size_n: int, h_val: float) -> void:
+	if cur_grid_size_n != grid_size_n_prev:
+		initialize_compute_code(cur_grid_size_n, h_val)
+	else:
+		simulate_stam(delta)
 
 func simulate_stam(dt: float) -> void:
 	#--- GPU work
@@ -273,12 +254,11 @@ func simulate_stam(dt: float) -> void:
 			_:
 				view_t()
 
-
 #--- helper functions
 func get_uniform(buffer, binding: int):
 	var rd_uniform = RDUniform.new()
 	# handle differnt types of buffers
-	if buffer == view_texture:
+	if buffer == view_gpu_compute_shader.view_texture:
 		rd_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
 	else:
 		rd_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
@@ -332,6 +312,15 @@ func dispatch(compute_list, shader_name, uniform_set, pc_bytes=null):
 	if pc_bytes:
 		rd.compute_list_set_push_constant(compute_list, pc_bytes, pc_bytes.size())
 	rd.compute_list_dispatch(compute_list, int(ceil(numX / 16.0)), int(ceil(numY / 16.0)), 1)
+
+func dispatch_view(compute_list, shader_name, uniform_set, pc_bytes=null):
+	rd.compute_list_bind_compute_pipeline(compute_list, pipelines[shader_name])
+	rd.compute_list_bind_uniform_set(compute_list, uniform_set, 0)
+	if pc_bytes:
+		rd.compute_list_set_push_constant(compute_list, pc_bytes, pc_bytes.size())
+	var xsteps = int(ceil(view_gpu_compute_shader.view_texture_size / 16.0))
+	var ysteps = int(ceil(view_gpu_compute_shader.view_texture_size / 16.0))
+	rd.compute_list_dispatch(compute_list, xsteps, ysteps, 1)
 
 #---- core functions
 func integrate_s(dt: float, wind_force: Vector2):
@@ -550,10 +539,10 @@ func view_t():
 		shader_name,
 		consts_buffer, 0,
 		t_buffer, 8,
-		view_texture, 20])
+		view_gpu_compute_shader.view_texture, 20])
 		
 	var compute_list = rd.compute_list_begin()
-	dispatch(compute_list, shader_name, uniform_set)
+	dispatch_view(compute_list, shader_name, uniform_set)
 	rd.compute_list_end()
 
 func view_div():
@@ -562,13 +551,13 @@ func view_div():
 		shader_name,
 		consts_buffer, 0,
 		div_buffer, 5,
-		view_texture, 20])
+		view_gpu_compute_shader.view_texture, 20])
 
 	var pc_bytes := PackedFloat32Array([debug_div_color_scale]).to_byte_array()
 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
 
 	var compute_list = rd.compute_list_begin()
-	dispatch(compute_list, shader_name, uniform_set, pc_bytes)
+	dispatch_view(compute_list, shader_name, uniform_set, pc_bytes)
 	rd.compute_list_end()
 
 func view_p():
@@ -577,13 +566,13 @@ func view_p():
 		shader_name,
 		consts_buffer, 0,
 		p_buffer, 4,
-		view_texture, 20])
+		view_gpu_compute_shader.view_texture, 20])
 
 	var pc_bytes := PackedFloat32Array([debug_p_color_scale]).to_byte_array()
 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
 
 	var compute_list = rd.compute_list_begin()
-	dispatch(compute_list, shader_name, uniform_set, pc_bytes)
+	dispatch_view(compute_list, shader_name, uniform_set, pc_bytes)
 	rd.compute_list_end()
 
 func view_uv():
@@ -593,13 +582,13 @@ func view_uv():
 		consts_buffer, 0,
 		u_buffer, 1,
 		v_buffer, 2,
-		view_texture, 20])
+		view_gpu_compute_shader.view_texture, 20])
 
 	var pc_bytes := PackedFloat32Array([debug_uv_color_scale]).to_byte_array()
 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
 
 	var compute_list = rd.compute_list_begin()
-	dispatch(compute_list, shader_name, uniform_set, pc_bytes)
+	dispatch_view(compute_list, shader_name, uniform_set, pc_bytes)
 	rd.compute_list_end()
 
 # -----------------------------------------------------------------------------------

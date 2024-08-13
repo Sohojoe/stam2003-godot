@@ -5,12 +5,13 @@ layout(local_size_x = 16, local_size_y = 16) in;
 
 // --- Begin Shared Buffer Definition
 layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
-    int numX;
-    int numY;
+    uint numX;
+    uint numY;
+    uint viewX;
+    uint viewY;
     float h;
     float h2;
 } consts;
-
 layout(set = 0, binding = 1, std430) readonly buffer ReadBuffer {
     float u[];
 } read_buffer;

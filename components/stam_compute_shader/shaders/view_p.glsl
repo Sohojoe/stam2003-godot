@@ -7,6 +7,8 @@ layout(local_size_x = 16, local_size_y = 16) in;
 layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
     uint numX;
     uint numY;
+    uint viewX;
+    uint viewY;
     float h;
     float h2;
 } consts;
@@ -32,10 +34,11 @@ vec3 hsv2rgb(vec3 c) {
 }
 
 void main() {
-    vec2 fragCoord=gl_GlobalInvocationID.xy;
-    ivec2 ifragCoord=ivec2(fragCoord.xy);
-    uint idx = ifragCoord.x;
-    uint idy = ifragCoord.y;
+    vec2 viewCoord=gl_GlobalInvocationID.xy;
+    ivec2 iviewCoord=ivec2(viewCoord.xy);
+    ivec2 iinputCoord = ivec2((viewCoord / vec2(consts.viewX, consts.viewY)) * vec2(consts.numX, consts.numY) );
+    uint idx = iinputCoord.x;
+    uint idy = iinputCoord.y;
     uint N = consts.numX -1;
 
     if (idx > N || idy > N) return;
@@ -56,5 +59,5 @@ void main() {
     // Convert HSV to RGB
     vec3 rgb = hsv2rgb(vec3(hue, saturation, value));
     vec4 color = vec4(rgb, 1.0);
-    imageStore(output_image, ifragCoord, color);
+    imageStore(output_image, iviewCoord, color);
 }

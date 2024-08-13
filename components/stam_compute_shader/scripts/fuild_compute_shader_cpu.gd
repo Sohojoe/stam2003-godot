@@ -6,6 +6,7 @@ extends Node2D
 @export var gi_skip_sprite_rendering: bool = false
 # ---- config
 @export var grid_size_n:int = 64
+@export var view_texture_size:int = 1024 # TODO: properly implement view_texture_size
 # ---- params
 @export_range(0.0, 1.0) var campfire_width: float = .2
 @export_range(1, 20, .1) var campfire_height: int = 2
@@ -125,7 +126,10 @@ func setup(num_x: int, num_y: int, h_val: float):
 	rd = RenderingServer.create_local_rendering_device()
 	var h2 = 0.5 * h
 
-	var consts_buffer_bytes := PackedInt32Array([numX, numY]).to_byte_array()
+	var consts_buffer_bytes := PackedInt32Array([
+			numX, numY, 
+			view_texture_size, view_texture_size
+			]).to_byte_array()
 	consts_buffer_bytes.append_array(PackedFloat32Array([h, h2]).to_byte_array())
 	consts_buffer_bytes.resize(ceil(consts_buffer_bytes.size() / 16.0) * 16)
 	consts_buffer = rd.storage_buffer_create(consts_buffer_bytes.size(), consts_buffer_bytes)
