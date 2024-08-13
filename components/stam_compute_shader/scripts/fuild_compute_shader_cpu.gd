@@ -32,8 +32,8 @@ var numX: int
 var numY: int
 var h: float
 
-var s: PackedFloat32Array
-var i: PackedFloat32Array
+var state: PackedFloat32Array
+var ignition: PackedFloat32Array
 
 var rd: RenderingDevice
 var pipelines = {}
@@ -115,12 +115,12 @@ func setup(num_x: int, num_y: int, h_val: float):
 	numX = num_x
 	numY = num_y
 	h = h_val
-	s = PackedFloat32Array()
-	s.resize(numX * numY)
-	s.fill(1.0)
-	i = PackedFloat32Array()
-	i.resize(numX * numY)
-	i.fill(0.0)
+	state = PackedFloat32Array()
+	state.resize(numX * numY)
+	state.fill(1.0)
+	ignition = PackedFloat32Array()
+	ignition.resize(numX * numY)
+	ignition.fill(0.0)
 	
 	rd = RenderingServer.create_local_rendering_device()
 	var h2 = 0.5 * h
@@ -130,8 +130,8 @@ func setup(num_x: int, num_y: int, h_val: float):
 	consts_buffer_bytes.resize(ceil(consts_buffer_bytes.size() / 16.0) * 16)
 	consts_buffer = rd.storage_buffer_create(consts_buffer_bytes.size(), consts_buffer_bytes)
 
-	var grid_of_bytes_0 = i.to_byte_array()
-	var grid_of_bytes_1 = s.to_byte_array()
+	var grid_of_bytes_0 = ignition.to_byte_array()
+	var grid_of_bytes_1 = state.to_byte_array()
 	u_buffer = rd.storage_buffer_create			(grid_of_bytes_0.size(), grid_of_bytes_0)
 	u_buffer_prev = rd.storage_buffer_create		(grid_of_bytes_0.size(), grid_of_bytes_0)
 	v_buffer = rd.storage_buffer_create			(grid_of_bytes_0.size(), grid_of_bytes_0)
@@ -267,8 +267,8 @@ func cool_and_lift(dt: float):
 		t_buffer, 8])
 
 	# Prepare push constants
-	var seed:float = randf()
-	var pc_data := PackedFloat32Array([dt, add_perturbance_probability, seed])
+	var fseed:float = randf()
+	var pc_data := PackedFloat32Array([dt, add_perturbance_probability, fseed])
 	var pc_bytes = pc_data.to_byte_array()
 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
 		
@@ -453,14 +453,12 @@ func handle_ignition():
 	campfire_height_prev = campfire_height
 
 	# update ignition
-	i.fill(0.0) # Note: this is not efficient, lol
+	ignition.fill(0.0) # Note: this is not efficient, lol
 	var campfire_start = int((numX/2.)-numX/2.*campfire_width)
 	var campfire_end = int((numX/2.)+numX/2.*campfire_width)
-	var center = (campfire_start + campfire_end) / 2.
-	var max_distance = (campfire_end - campfire_start) / 2.
 	for row in range(campfire_height):
 		for col in range(campfire_start, campfire_end):
-			i[row * numY + col] = 1.0
+			ignition[row * numY + col] = 1.0
 
 	# send to gpu
-	rd.buffer_update(i_buffer, 0, i.size() * 4, i.to_byte_array())
+	rd.buffer_update(i_buffer, 0, ignition.size() * 4, ignition.to_byte_array())

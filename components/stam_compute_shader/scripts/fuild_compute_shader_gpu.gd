@@ -95,14 +95,14 @@ func handle_ignition_cpu():
 	campfire_height_prev = campfire_height
 
 	# update ignition
-	i.fill(0.0) # Note: this is not efficient, lol
+	ignition.fill(0.0) # Note: this is not efficient, lol
 	var campfire_start = int((numX/2.)-numX/2.*campfire_width)
 	var campfire_end = int((numX/2.)+numX/2.*campfire_width)
-	var center = (campfire_start + campfire_end) / 2.
-	var max_distance = (campfire_end - campfire_start) / 2.
+	#var center = (campfire_start + campfire_end) / 2.
+	#var max_distance = (campfire_end - campfire_start) / 2.
 	for row in range(campfire_height):
 		for col in range(campfire_start, campfire_end):
-			i[row * numY + col] = 1.0
+			ignition[row * numY + col] = 1.0
 	RenderingServer.call_on_render_thread(mark_ignition_changed)
 
 ###############################################################################
@@ -111,8 +111,8 @@ var numX: int
 var numY: int
 var h: float
 
-var s: PackedFloat32Array
-var i: PackedFloat32Array
+var state: PackedFloat32Array
+var ignition: PackedFloat32Array
 
 var rd: RenderingDevice
 var pipelines = {}
@@ -149,12 +149,12 @@ func initialize_compute_code(grid_size: int, h_val: float) -> void:
 	numX= floor(sim_width / h)
 	numY = floor(sim_height / h)
 	h = h_val
-	s = PackedFloat32Array()
-	s.resize(numX * numY)
-	s.fill(1.0)
-	i = PackedFloat32Array()
-	i.resize(numX * numY)
-	i.fill(0.0)
+	state = PackedFloat32Array()
+	state.resize(numX * numY)
+	state.fill(1.0)
+	ignition = PackedFloat32Array()
+	ignition.resize(numX * numY)
+	ignition.fill(0.0)
 	
 	rd = RenderingServer.get_rendering_device()
 	var h2 = 0.5 * h
@@ -164,8 +164,8 @@ func initialize_compute_code(grid_size: int, h_val: float) -> void:
 	consts_buffer_bytes.resize(ceil(consts_buffer_bytes.size() / 16.0) * 16)
 	consts_buffer = rd.storage_buffer_create(consts_buffer_bytes.size(), consts_buffer_bytes)
 
-	var grid_of_bytes_0 = i.to_byte_array()
-	var grid_of_bytes_1 = s.to_byte_array()
+	var grid_of_bytes_0 = ignition.to_byte_array()
+	var grid_of_bytes_1 = state.to_byte_array()
 	u_buffer = rd.storage_buffer_create			(grid_of_bytes_0.size(), grid_of_bytes_0)
 	u_buffer_prev = rd.storage_buffer_create		(grid_of_bytes_0.size(), grid_of_bytes_0)
 	v_buffer = rd.storage_buffer_create			(grid_of_bytes_0.size(), grid_of_bytes_0)
@@ -183,9 +183,15 @@ func initialize_compute_code(grid_size: int, h_val: float) -> void:
 	fmt3.width = numX
 	fmt3.height = numY
 	fmt3.format = RenderingDevice.DATA_FORMAT_R32G32B32A32_SFLOAT
-	fmt3.usage_bits = RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | RenderingDevice.TEXTURE_USAGE_CAN_COPY_TO_BIT | RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT | RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT	
+	fmt3.usage_bits = RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
+			RenderingDevice.TEXTURE_USAGE_CAN_COPY_TO_BIT | \
+			RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT | \
+			RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT	
 	var view3 = RDTextureView.new()
-	view_texture = rd.texture_create(fmt3, view3)
+	var pixel_data = PackedByteArray()
+	pixel_data.resize(numX * numY*4*4)
+	pixel_data.fill(1)
+	view_texture = rd.texture_create(fmt3, view3, [pixel_data])
 	var texture_rd = Texture2DRD.new()
 	texture_rd.texture_rd_rid = view_texture
 	view_gpu_compute_shader.texture = null
@@ -356,8 +362,8 @@ func cool_and_lift(dt: float):
 		t_buffer, 8])
 
 	# Prepare push constants
-	var seed:float = randf()
-	var pc_data := PackedFloat32Array([dt, add_perturbance_probability, seed])
+	var fseed:float = randf()
+	var pc_data := PackedFloat32Array([dt, add_perturbance_probability, fseed])
 	var pc_bytes = pc_data.to_byte_array()
 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
 		
@@ -533,7 +539,7 @@ func stam_advect_vel(dt: float):
 func handle_ignition_gpu():
 	if (ignition_changed):
 		ignition_changed = false
-		rd.buffer_update(i_buffer, 0, i.size() * 4, i.to_byte_array())
+		rd.buffer_update(i_buffer, 0, ignition.size() * 4, ignition.to_byte_array())
 
 func mark_ignition_changed() -> void:
 	ignition_changed = true
