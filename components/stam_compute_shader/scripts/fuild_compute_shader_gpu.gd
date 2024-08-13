@@ -175,8 +175,6 @@ func initialize_compute_code(grid_size: int, h_val: float) -> void:
 	t_buffer_prev = rd.storage_buffer_create		(grid_of_bytes_0.size(), grid_of_bytes_0)
 	i_buffer = rd.storage_buffer_create			(grid_of_bytes_0.size(), grid_of_bytes_0)
 	s_buffer = rd.storage_buffer_create			(grid_of_bytes_1.size(), grid_of_bytes_1)
-
-
 	
 	for key in shader_file_names.keys():
 		var file_name = shader_file_names[key]
@@ -186,6 +184,8 @@ func initialize_compute_code(grid_size: int, h_val: float) -> void:
 		shaders[key] = shader
 		pipelines[key] = rd.compute_pipeline_create(shader)
 
+	campfire_width_prev = -1
+	campfire_height_prev = -1
 
 func free_previous_resources():
 
