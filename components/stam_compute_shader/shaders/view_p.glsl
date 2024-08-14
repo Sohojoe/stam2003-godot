@@ -44,7 +44,7 @@ void main() {
     if (idx > N || idy > N) return;
 
     uint cell = idy * consts.numX + idx;
-    float p = p_buffer.p[idx];
+    float p = p_buffer.p[cell];
 	p = min(p / pc.color_scale, 1.);
 
     // Calculate magnitude and direction

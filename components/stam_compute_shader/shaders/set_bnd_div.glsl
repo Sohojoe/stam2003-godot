@@ -78,7 +78,7 @@ void main() {
     } else if (is_left_boundary && is_bottom_boundary) {
         div_buffer.div[cell] = div_buffer.div[cell - numX + 1]; 
     } else if (is_right_boundary && is_top_boundary) {
-        div_buffer.div[cell] = div_buffer.div[cell + num_cells_x -1]; 
+        div_buffer.div[cell] = div_buffer.div[cell + numX -1]; 
     } else if (is_right_boundary && is_bottom_boundary) {
         div_buffer.div[cell] = div_buffer.div[cell - numX - 1];
     }

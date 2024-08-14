@@ -69,7 +69,7 @@ void main() {
         }
         v_buffer.v[cell] = v_buffer.v[cell + 1];
     } else if (is_right_boundary) {
-        if (u_buffer.u[cell + 1] > 0) {
+        if (u_buffer.u[cell - 1] > 0) {
     		u_buffer.u[cell] = u_buffer.u[cell - 1];
         } else {
             u_buffer.u[cell] = 0;
@@ -92,8 +92,8 @@ void main() {
         u_buffer.u[cell] = u_buffer.u[cell - numX + 1]; 
         v_buffer.v[cell] = v_buffer.v[cell - numX + 1]; 
     } else if (is_right_boundary && is_top_boundary) {
-        u_buffer.u[cell] = u_buffer.u[cell + num_cells_x -1]; 
-        v_buffer.v[cell] = v_buffer.v[cell + num_cells_x -1]; 
+        u_buffer.u[cell] = u_buffer.u[cell + numX -1]; 
+        v_buffer.v[cell] = v_buffer.v[cell + numX -1]; 
     } else if (is_right_boundary && is_bottom_boundary) {
         u_buffer.u[cell] = u_buffer.u[cell - numX - 1];
         v_buffer.v[cell] = v_buffer.v[cell - numX - 1];

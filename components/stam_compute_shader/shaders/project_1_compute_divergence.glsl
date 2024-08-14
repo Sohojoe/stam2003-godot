@@ -72,7 +72,8 @@ void main() {
     if (s_buffer.s[cell] == 0.0 || idx == 0 || idx >= consts.numX - 1 || idy == 0 || idy >= consts.numY - 1) {
         return;
     }
-    float _h = 1.0 / max(consts.numX, consts.numY);
+    // float _h = 1.0 / max(consts.numX, consts.numY);
+    float _h = 1.0 / 64;
     div_buffer.div[cell] = -0.5 * _h * (
         u_buffer.u[cell + 1] -
         u_buffer.u[cell - 1] + 

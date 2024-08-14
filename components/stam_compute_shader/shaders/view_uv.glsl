@@ -49,8 +49,8 @@ void main() {
     if (idx > N || idy > N) return;
 
     uint cell = idy * consts.numX + idx;
-    float u = u_buffer.u[idx];
-    float v = v_buffer.v[idx];
+    float u = u_buffer.u[cell];
+    float v = v_buffer.v[cell];
 	u = min(u / pc.color_scale, 1.);
 	v = min(v / pc.color_scale, 1.);
 
