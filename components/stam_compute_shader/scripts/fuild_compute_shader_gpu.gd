@@ -3,7 +3,7 @@ class_name FluidShaderGpu
 extends Node2D
 
 # ---- global illimination values
-@export var gi_rendering: bool = false
+@export var skip_gi_rendering: bool = false
 @export_range(0, 3, .1) var di_debug_view: int = 0
 @export_range(0.0, 1.0) var debug_div_color_scale: float = 0.004
 @export_range(0.0, 0.010) var debug_p_color_scale: float = 0.0003
@@ -246,7 +246,7 @@ func simulate_stam(dt: float) -> void:
 	project_s(num_iters_projection)
 	diffuse_t(dt, num_iters_diffuse)
 	stam_advect_temperature(dt)
-	if not gi_rendering:
+	if not skip_gi_rendering:
 		match di_debug_view:
 			1:
 				view_div()

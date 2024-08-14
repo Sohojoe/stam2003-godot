@@ -11,9 +11,10 @@ var grid_sizes = [
 	pow(2,9), #512
 	pow(2,10), #1024
 	pow(2,11), #2048
-	# pow(2,12), #4096
-	# pow(2,13), #8192
-	# pow(2,14), #16,384
+	pow(2,12), #4096
+	pow(2,13), #8192
+	pow(2,14), #16,384
+	#pow(2,15), #32,768
 	]
 
 @export var mode:int = 0
@@ -47,6 +48,9 @@ func handle_input():
 		#fire_cpu_compute_shader.di_debug_view = 0
 	if Input.is_action_just_pressed("restart"):
 		fire_gpu_compute_shader.restart()
+	if Input.is_action_just_pressed("toggle_view"):
+		fire_gpu_compute_shader.skip_gi_rendering = !fire_gpu_compute_shader.skip_gi_rendering
+		fire_cpu_compute_shader.skip_gi_rendering = !fire_cpu_compute_shader.skip_gi_rendering
 
 func update_debug():
 	if mode == 0:
@@ -60,12 +64,16 @@ func update_debug():
 			s = s+"\n debug view: uv (x,y velocity)"
 		else:
 			s = s+"\n debug view: none"
+		if fire_gpu_compute_shader.skip_gi_rendering:
+			s = s+"\n rendering disabled (v to toggle))"
 
 		simple_ui.set_debug_output_text(s)
 	elif mode == 1:
 		var s = " mode: fire_cpu_compute_shader"
 		s = s+"\n grid size: " + str(fire_cpu_compute_shader.grid_size_n)
-		
+		s = s+"\n NOTE: changing grid size not supported yet"
+		if fire_cpu_compute_shader.skip_gi_rendering:
+			s = s+"\n rendering disabled (v to toggle))"		
 		simple_ui.set_debug_output_text(s)
 		
 

@@ -3,7 +3,7 @@ class_name FluidShaderCpu
 extends Node2D
 
 # ---- global illimination values
-@export var gi_skip_sprite_rendering: bool = false
+@export var skip_gi_rendering: bool = false
 # ---- config
 @export var grid_size_n:int = 64
 @export var view_texture_size:int = 1024 # TODO: properly implement view_texture_size
@@ -96,7 +96,7 @@ func _process(delta):
 	if not paused:
 		delta = clamp(delta, min_dt, max_dt)
 		simulate_stam(delta)
-		if view_fire.visible and not gi_skip_sprite_rendering:
+		if view_fire.visible and not skip_gi_rendering:
 			var t = rd.buffer_get_data(t_buffer).to_float32_array()
 			view_fire.update_shader_params(t, grid_size_n)
 		if view_uv.visible:
