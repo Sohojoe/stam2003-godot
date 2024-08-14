@@ -11,9 +11,9 @@ var grid_sizes = [
 	pow(2,9), #512
 	pow(2,10), #1024
 	pow(2,11), #2048
-	pow(2,12), #4096
-	pow(2,13), #8192
-	pow(2,14), #16,384
+	# pow(2,12), #4096
+	# pow(2,13), #8192
+	# pow(2,14), #16,384
 	]
 
 @export var mode:int = 0
@@ -45,6 +45,8 @@ func handle_input():
 	else:
 		fire_gpu_compute_shader.di_debug_view = 0
 		#fire_cpu_compute_shader.di_debug_view = 0
+	if Input.is_action_just_pressed("restart"):
+		fire_gpu_compute_shader.restart()
 
 func update_debug():
 	if mode == 0:

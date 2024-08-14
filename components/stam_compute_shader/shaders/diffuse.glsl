@@ -49,7 +49,8 @@ layout(push_constant, std430) uniform Params {
 void main() {
     uint numX = consts.numX;
     uint numY = consts.numY;
-    float a = pc.dt * pc.diff * numX * numX;
+    // float a = pc.dt * pc.diff * numX * numX;
+    float a = pc.dt * 64 * 64 * pc.diff;
 
     uint idx = gl_GlobalInvocationID.x;
     uint idy = gl_GlobalInvocationID.y;

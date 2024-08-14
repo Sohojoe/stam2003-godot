@@ -48,7 +48,8 @@ void main() {
         return;
     }
 
-    float _h = 1.0 / max(consts.numX, consts.numY);
+    // float _h = 1.0 / max(consts.numX, consts.numY);
+    float _h = 1.0 / 64;
 
     u_buffer.u[cell] -= 0.5 * (p_buffer.p[cell + 1] - p_buffer.p[cell - 1]) / _h;
     v_buffer.v[cell] -= 0.5 * (p_buffer.p[cell + consts.numX] - p_buffer.p[cell - consts.numX]) / _h;

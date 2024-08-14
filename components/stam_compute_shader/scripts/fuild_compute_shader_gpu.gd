@@ -16,6 +16,7 @@ extends Node2D
 @export_range(0.0, 1.0) var add_perturbance_probability: float = .2
 @export var num_iters_projection: int = 20
 @export var num_iters_diffuse: int = 20
+@export var diffuse_visc_value: float = .00001
 @export var diffuse_diff_value: float = .00001
 @export var wind: Vector2 = Vector2.ZERO
 @export var min_dt: float = 1.0 / 60.0
@@ -56,7 +57,7 @@ func _ready():
 	if not camera:
 		print("Camera2D not found")
 	
-	RenderingServer.call_on_render_thread(initialize_compute_code.bind(grid_size_n, h))
+	RenderingServer.call_on_render_thread(initialize_compute_code.bind(grid_size_n))
 	# disbale 	editor_label
 	editor_label.visible = false
 
@@ -65,9 +66,9 @@ func _process(delta):
 	if not is_visible_in_tree():
 		return
 	if not paused:
-		delta = clamp(delta, min_dt, max_dt)
+		delta = clamp(delta, max_dt, min_dt)
 		handle_ignition_cpu()
-		RenderingServer.call_on_render_thread(render_thread_update.bind(delta, grid_size_n, h))
+		RenderingServer.call_on_render_thread(render_thread_update.bind(delta, grid_size_n))
 		handle_displaying_output()
 
 func find_camera(node: Node) -> Camera2D:
@@ -91,20 +92,22 @@ func handle_ignition_cpu():
 
 	# update ignition
 	ignition.fill(0.0) # Note: this is not efficient, lol
-	var campfire_start = int((numX/2.)-numX/2.*campfire_width)
-	var campfire_end = int((numX/2.)+numX/2.*campfire_width)
-	#var center = (campfire_start + campfire_end) / 2.
-	#var max_distance = (campfire_end - campfire_start) / 2.
-	for row in range(campfire_height):
+	# var campfire_start = int((numX/2.)-numX/2.*campfire_width)
+	# var campfire_end = int((numX/2.)+numX/2.*campfire_width)
+	var campfire_start = int((numX/2.)-64/2.*campfire_width)
+	var campfire_end = int((numX/2.)+64/2.*campfire_width)	
+	for row in range(1, 1+campfire_height):
 		for col in range(campfire_start, campfire_end):
 			ignition[row * numY + col] = 1.0
 	RenderingServer.call_on_render_thread(mark_ignition_changed)
+
+func restart():
+	RenderingServer.call_on_render_thread(initialize_compute_code.bind(grid_size_n))
 
 ###############################################################################
 # rendering thread.
 var numX: int
 var numY: int
-var h: float
 
 var state: PackedFloat32Array
 var ignition: PackedFloat32Array
@@ -130,21 +133,21 @@ var i_buffer
 var ignition_changed:bool = false
 var grid_size_n_prev: int = -1
 
-func initialize_compute_code(grid_size: int, h_val: float) -> void:
+func initialize_compute_code(grid_size: int) -> void:
 	free_previous_resources() 
 	
 	grid_size_n_prev = grid_size
 
-	var canvas_width = grid_size
-	var canvas_height = grid_size
-	var sim_height = 1.0
+	var canvas_width = 1024
+	var canvas_height = 1024
+	numX= grid_size
+	numY = grid_size
+	var sim_height = numY / 64.0
 	c_scale = canvas_height / sim_height
 	var sim_width = canvas_width / c_scale
 	var num_cells = grid_size*grid_size
-	h = sqrt(sim_width * sim_height / num_cells)
-	numX= floor(sim_width / h)
-	numY = floor(sim_height / h)
-	h = h_val
+	var h = sqrt(sim_width * sim_height / num_cells)
+	#var h = sqrt(1 / (64*64))
 	state = PackedFloat32Array()
 	state.resize(numX * numY)
 	state.fill(1.0)
@@ -225,9 +228,9 @@ func free_previous_resources():
 	pipelines.clear()
 	uniform_sets.clear()
 
-func render_thread_update(delta: float, cur_grid_size_n: int, h_val: float) -> void:
+func render_thread_update(delta: float, cur_grid_size_n: int) -> void:
 	if cur_grid_size_n != grid_size_n_prev:
-		initialize_compute_code(cur_grid_size_n, h_val)
+		initialize_compute_code(cur_grid_size_n)
 	else:
 		simulate_stam(delta)
 
@@ -237,12 +240,12 @@ func simulate_stam(dt: float) -> void:
 	# integrate_s(dt, wind)
 	apply_ignition()
 	cool_and_lift(dt)
-	diffuse_t(dt, num_iters_diffuse)
 	diffuse_uv(dt, num_iters_diffuse)
 	project_s(num_iters_projection)
-	stam_advect_temperature(dt)
 	stam_advect_vel(dt)
 	project_s(num_iters_projection)
+	diffuse_t(dt, num_iters_diffuse)
+	stam_advect_temperature(dt)
 	if not gi_rendering:
 		match di_debug_view:
 			1:
@@ -383,7 +386,7 @@ func apply_ignition():
 	dispatch(compute_list, shader_name, uniform_set)
 	rd.compute_list_end()
 
-func diffuse(read_buffer, write_buffer, dt:float, num_iters:int):
+func diffuse(read_buffer, write_buffer, dt:float, diff: float, num_iters:int):
 	var shader_name = "diffuse"
 	var uniform_set = get_uniform_set([
 		shader_name,
@@ -392,7 +395,7 @@ func diffuse(read_buffer, write_buffer, dt:float, num_iters:int):
 		write_buffer, 2,
 		s_buffer, 3
 		])
-	var pc_bytes := PackedFloat32Array([dt, diffuse_diff_value]).to_byte_array()
+	var pc_bytes := PackedFloat32Array([dt, diff]).to_byte_array()
 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
 
 	var compute_list = rd.compute_list_begin()
@@ -406,14 +409,14 @@ func diffuse(read_buffer, write_buffer, dt:float, num_iters:int):
 func diffuse_uv(dt:float, num_iters:int):
 
 	swap_uv_buffers()
-	diffuse(u_buffer_prev, u_buffer, dt, num_iters)
-	diffuse(v_buffer_prev, v_buffer, dt, num_iters)
+	diffuse(u_buffer_prev, u_buffer, dt, diffuse_visc_value, num_iters)
+	diffuse(v_buffer_prev, v_buffer, dt, diffuse_visc_value, num_iters)
 
 
 func diffuse_t(dt:float, num_iters:int):
 
 	swap_t_buffer()
-	diffuse(t_buffer_prev, t_buffer, dt, num_iters)
+	diffuse(t_buffer_prev, t_buffer, dt, diffuse_diff_value, num_iters)
 
 
 func project_s(num_iters: int):

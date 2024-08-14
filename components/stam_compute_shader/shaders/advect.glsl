@@ -48,7 +48,8 @@ void main() {
 
     if (idx >= N || idy >= N) return;
 
-    float dt0 = pc.dt * N;
+    // float dt0 = pc.dt * N;
+    float dt0 = pc.dt * 64; // was N but we want constant scale at different grid sizes
     uint i = idx;
     uint j = idy;
     uint cell = idy * consts.numX + idx;
