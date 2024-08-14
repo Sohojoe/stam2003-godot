@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://bv7rqlwflrff2"
+path="res://.godot/imported/cool_and_lift.glsl-353765ae8bad95ad9005e2740f190cd3.res"
+
+[deps]
+
+source_file="res://components/stam_compute_shader/experimental/shaders_morton2D/cool_and_lift.glsl"
+dest_files=["res://.godot/imported/cool_and_lift.glsl-353765ae8bad95ad9005e2740f190cd3.res"]
+
+[params]
+

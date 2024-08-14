@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://0cw6b64u1nfd"
+path="res://.godot/imported/apply_force.glsl-94e43857ea74883d63b7f4e87b2938fb.res"
+
+[deps]
+
+source_file="res://components/stam_compute_shader/experimental/shaders_morton2D/apply_force.glsl"
+dest_files=["res://.godot/imported/apply_force.glsl-94e43857ea74883d63b7f4e87b2938fb.res"]
+
+[params]
+

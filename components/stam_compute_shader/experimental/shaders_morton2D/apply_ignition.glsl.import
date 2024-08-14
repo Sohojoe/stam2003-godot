@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://b721fnjckxnjk"
+path="res://.godot/imported/apply_ignition.glsl-2df121aaa4d82eea22c075b2ea0f85ad.res"
+
+[deps]
+
+source_file="res://components/stam_compute_shader/experimental/shaders_morton2D/apply_ignition.glsl"
+dest_files=["res://.godot/imported/apply_ignition.glsl-2df121aaa4d82eea22c075b2ea0f85ad.res"]
+
+[params]
+

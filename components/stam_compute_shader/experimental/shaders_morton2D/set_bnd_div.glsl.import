@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://b0m8rmkcia7uc"
+path="res://.godot/imported/set_bnd_div.glsl-97d41418d72d67a381ce1f789c6541de.res"
+
+[deps]
+
+source_file="res://components/stam_compute_shader/experimental/shaders_morton2D/set_bnd_div.glsl"
+dest_files=["res://.godot/imported/set_bnd_div.glsl-97d41418d72d67a381ce1f789c6541de.res"]
+
+[params]
+

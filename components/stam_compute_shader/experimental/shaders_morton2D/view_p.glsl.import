@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://xiaqmw2h2g31"
+path="res://.godot/imported/view_p.glsl-75d81056aae35870ae92099d7c043afb.res"
+
+[deps]
+
+source_file="res://components/stam_compute_shader/experimental/shaders_morton2D/view_p.glsl"
+dest_files=["res://.godot/imported/view_p.glsl-75d81056aae35870ae92099d7c043afb.res"]
+
+[params]
+

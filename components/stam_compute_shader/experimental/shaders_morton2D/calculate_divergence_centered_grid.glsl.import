@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://h7gb8k5j5ra0"
+path="res://.godot/imported/calculate_divergence_centered_grid.glsl-94a3835f14daeb07e65d40ff668e3203.res"
+
+[deps]
+
+source_file="res://components/stam_compute_shader/experimental/shaders_morton2D/calculate_divergence_centered_grid.glsl"
+dest_files=["res://.godot/imported/calculate_divergence_centered_grid.glsl-94a3835f14daeb07e65d40ff668e3203.res"]
+
+[params]
+
