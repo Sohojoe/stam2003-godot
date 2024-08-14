@@ -14,7 +14,7 @@ var grid_sizes = [
 	pow(2,12), #4096
 	pow(2,13), #8192
 	pow(2,14), #16,384
-	#pow(2,15), #32,768
+	#pow(2,15), #32,768 # is crashing
 	]
 
 @export var mode:int = 0
