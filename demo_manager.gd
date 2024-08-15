@@ -2,7 +2,8 @@ extends Node2D
 
 var simple_ui: CanvasLayer
 var fire_cpu_compute_shader: FluidShaderCpu
-var fire_gpu_compute_shader: FluidShaderGpu 
+#var fire_gpu_compute_shader: FluidShaderGpu 
+var fire_gpu_texture_shader: FluidTextureShaderGpu 
 
 var grid_sizes = [
 	pow(2,6), #64
@@ -24,7 +25,8 @@ var grid_sizes = [
 func _ready() -> void:
 	simple_ui = get_tree().current_scene.get_node("simple_ui")
 	fire_cpu_compute_shader = get_tree().current_scene.get_node("Fire CPU Compute Shader")
-	fire_gpu_compute_shader = get_tree().current_scene.get_node("Fire GPU Compute Shader")
+	#fire_gpu_compute_shader = get_tree().current_scene.get_node("Fire GPU Compute Shader")
+	fire_gpu_texture_shader = get_tree().current_scene.get_node("Fire GPU Texture Shader")
 	set_mode()
 	set_grid_size()
 
@@ -41,32 +43,48 @@ func handle_input():
 	if Input.is_action_just_pressed("cycle_debug_view"):
 		cycle_debug_view()
 	if Input.is_action_pressed("debug_view"):
-		fire_gpu_compute_shader.di_debug_view = debug_view
+		#fire_gpu_compute_shader.di_debug_view = debug_view
+		fire_gpu_texture_shader.di_debug_view = debug_view
 		#fire_cpu_compute_shader.di_debug_view = debug_view
 	else:
-		fire_gpu_compute_shader.di_debug_view = 0
+		#fire_gpu_compute_shader.di_debug_view = 0
+		fire_gpu_texture_shader.di_debug_view = 0
 		#fire_cpu_compute_shader.di_debug_view = 0
 	if Input.is_action_just_pressed("restart"):
-		fire_gpu_compute_shader.restart()
+		#fire_gpu_compute_shader.restart()
+		fire_gpu_texture_shader.restart()
 	if Input.is_action_just_pressed("toggle_view"):
-		fire_gpu_compute_shader.skip_gi_rendering = !fire_gpu_compute_shader.skip_gi_rendering
+		#fire_gpu_compute_shader.skip_gi_rendering = !fire_gpu_compute_shader.skip_gi_rendering
+		fire_gpu_texture_shader.skip_gi_rendering = !fire_gpu_texture_shader.skip_gi_rendering
 		fire_cpu_compute_shader.skip_gi_rendering = !fire_cpu_compute_shader.skip_gi_rendering
 
 func update_debug():
 	if mode == 0:
-		var s = " mode: fire_gpu_compute_shader"
-		s = s+"\n grid size: " + str(fire_gpu_compute_shader.grid_size_n)
-		if fire_gpu_compute_shader.di_debug_view == 1:
+		#var s = " mode: fire_gpu_compute_shader"
+		#s = s+"\n grid size: " + str(fire_gpu_compute_shader.grid_size_n)
+		#if fire_gpu_compute_shader.di_debug_view == 1:
+			#s = s+"\n debug view: div (divergance)"
+		#elif fire_gpu_compute_shader.di_debug_view == 2:
+			#s = s+"\n debug view: p (presure)"
+		#elif fire_gpu_compute_shader.di_debug_view == 3:
+			#s = s+"\n debug view: uv (x,y velocity)"
+		#else:
+			#s = s+"\n debug view: none"
+		#if fire_gpu_compute_shader.skip_gi_rendering:
+			#s = s+"\n rendering disabled (v to toggle))"
+		#simple_ui.set_debug_output_text(s)
+		var s = " mode: fire_gpu_texture_shader"
+		s = s+"\n grid size: " + str(fire_gpu_texture_shader.grid_size_n)
+		if fire_gpu_texture_shader.di_debug_view == 1:
 			s = s+"\n debug view: div (divergance)"
-		elif fire_gpu_compute_shader.di_debug_view == 2:
+		elif fire_gpu_texture_shader.di_debug_view == 2:
 			s = s+"\n debug view: p (presure)"
-		elif fire_gpu_compute_shader.di_debug_view == 3:
+		elif fire_gpu_texture_shader.di_debug_view == 3:
 			s = s+"\n debug view: uv (x,y velocity)"
 		else:
 			s = s+"\n debug view: none"
-		if fire_gpu_compute_shader.skip_gi_rendering:
+		if fire_gpu_texture_shader.skip_gi_rendering:
 			s = s+"\n rendering disabled (v to toggle))"
-
 		simple_ui.set_debug_output_text(s)
 	elif mode == 1:
 		var s = " mode: fire_cpu_compute_shader"
@@ -85,9 +103,11 @@ func cycle_mode():
 
 func set_mode():
 	fire_cpu_compute_shader.hide()
-	fire_gpu_compute_shader.hide()
+	#fire_gpu_compute_shader.hide()
+	fire_gpu_texture_shader.hide()
 	if mode == 0:
-		fire_gpu_compute_shader.show()
+		#fire_gpu_compute_shader.show()
+		fire_gpu_texture_shader.show()
 	elif mode ==1:
 		fire_cpu_compute_shader.show()
 
@@ -98,7 +118,8 @@ func cycle_grid_size():
 	set_grid_size()
 
 func set_grid_size():
-	fire_gpu_compute_shader.grid_size_n = grid_sizes[grid_size_idx]
+	#fire_gpu_compute_shader.grid_size_n = grid_sizes[grid_size_idx]
+	fire_gpu_texture_shader.grid_size_n = grid_sizes[grid_size_idx]
 	fire_cpu_compute_shader.grid_size_n = grid_sizes[grid_size_idx]
 
 func cycle_debug_view():
