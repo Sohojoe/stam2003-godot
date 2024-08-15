@@ -59,3 +59,46 @@ toggle_view={
 [rendering]
 
 textures/vram_compression/import_etc2_astc=true
+
+[shader_globals]
+
+numX={
+"type": "uint",
+"value": 0
+}
+numY={
+"type": "uint",
+"value": 0
+}
+viewX={
+"type": "uint",
+"value": 0
+}
+viewY={
+"type": "uint",
+"value": 0
+}
+h={
+"type": "float",
+"value": 0.0
+}
+h2={
+"type": "float",
+"value": 0.0
+}
+dt={
+"type": "float",
+"value": 0.0
+}
+view_ratio={
+"type": "vec2",
+"value": Vector2(0, 0)
+}
+grid_size={
+"type": "vec2",
+"value": Vector2(0, 0)
+}
+view_size={
+"type": "vec2",
+"value": Vector2(0, 0)
+}

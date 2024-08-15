@@ -38,8 +38,8 @@ func _update_texture() -> void:
 	# Add the viewport as a child (optional, if you want to display it in the scene)
 	add_child(viewport)
 	shader_material = ShaderMaterial.new()
-	var shader = preload("res://components/stam_compute_shader/texture_shaders/view_t.gdshader")
-	shader_material.shader = shader
+	# var shader = preload("res://components/stam_compute_shader/texture_shaders/view_t.gdshader")
+	# shader_material.shader = shader
 	#var fred = shader.get_shader_uniform_list()
 	material = shader_material
 	# viewport.set_shader(shader_material)

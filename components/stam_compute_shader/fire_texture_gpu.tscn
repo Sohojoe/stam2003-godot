@@ -6,33 +6,13 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_3frk7"]
 shader = ExtResource("2_bdj5q")
-shader_parameter/numX = null
-shader_parameter/numY = null
-shader_parameter/viewX = null
-shader_parameter/viewY = null
+shader_parameter/t = null
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_c65w0"]
 viewport_path = NodePath("view gpu texture shader/@SubViewport@17251")
 
 [node name="Fire GPU Texture Shader" type="Node2D"]
 script = ExtResource("1_eqc0t")
-skip_gi_rendering = null
-di_debug_view = null
-debug_div_color_scale = null
-debug_p_color_scale = null
-debug_uv_color_scale = null
-grid_size_n = null
-campfire_width = null
-campfire_height = null
-add_perturbance_probability = null
-num_iters_projection = null
-num_iters_diffuse = null
-diffuse_visc_value = null
-diffuse_diff_value = null
-wind = null
-min_dt = null
-max_dt = null
-paused = null
 
 [node name="view gpu texture shader" type="Sprite2D" parent="."]
 material = SubResource("ShaderMaterial_3frk7")

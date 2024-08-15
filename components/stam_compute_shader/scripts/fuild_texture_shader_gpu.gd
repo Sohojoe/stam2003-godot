@@ -51,7 +51,9 @@ var shader_file_names = {
 	"view_p": "res://components/stam_compute_shader/shaders/view_p.glsl",
 	"view_uv": "res://components/stam_compute_shader/shaders/view_uv.glsl",
 }
-
+var texture_shader_file_names = {
+	"view_t": "res://components/stam_compute_shader/texture_shaders/view_t.gdshader",
+}
 func _ready():
 	camera = find_camera(get_tree().current_scene)
 	if not camera:
@@ -115,6 +117,7 @@ var ignition: PackedFloat32Array
 var rd: RenderingDevice
 var pipelines = {}
 var shaders = {}
+var texture_shaders = {}
 var uniform_sets = {}
 var consts_buffer
 var u_buffer
@@ -164,6 +167,21 @@ func initialize_compute_code(grid_size: int) -> void:
 	consts_buffer_bytes.append_array(PackedFloat32Array([h, h2]).to_byte_array())
 	consts_buffer_bytes.resize(ceil(consts_buffer_bytes.size() / 16.0) * 16)
 	consts_buffer = rd.storage_buffer_create(consts_buffer_bytes.size(), consts_buffer_bytes)
+	
+
+	var grid_size_v2 = Vector2(numX, numY)
+	var view_size = Vector2(view_texture_size, view_texture_size)
+	var view_ratio = grid_size_v2 / view_size
+	RenderingServer.global_shader_parameter_set("dt", 1.0/60)
+	RenderingServer.global_shader_parameter_set("grid_size", grid_size_v2)
+	RenderingServer.global_shader_parameter_set("h", h)
+	RenderingServer.global_shader_parameter_set("h2", h2)	
+	RenderingServer.global_shader_parameter_set("numX", numX)
+	RenderingServer.global_shader_parameter_set("numY", numY)
+	RenderingServer.global_shader_parameter_set("viewX", view_texture_size)
+	RenderingServer.global_shader_parameter_set("viewY", view_texture_size)
+	RenderingServer.global_shader_parameter_set("view_ratio", view_ratio)
+	RenderingServer.global_shader_parameter_set("view_size", view_size)
 
 	var grid_of_bytes_0 = ignition.to_byte_array()
 	var grid_of_bytes_1 = state.to_byte_array()
@@ -188,6 +206,12 @@ func initialize_compute_code(grid_size: int) -> void:
 		var shader = rd.shader_create_from_spirv(shader_spirv)
 		shaders[key] = shader
 		pipelines[key] = rd.compute_pipeline_create(shader)
+		
+	for key in texture_shader_file_names.keys():
+		var file_name:String = texture_shader_file_names[key]
+		var shader = load(file_name)
+		texture_shaders[key] = shader
+		
 
 	campfire_width_prev = -1
 	campfire_height_prev = -1
@@ -224,6 +248,10 @@ func free_previous_resources():
 		rd.free_rid(shaders[key])
 	shaders.clear()
 	
+	for key in texture_shaders.keys():
+		rd.free_rid(texture_shaders[key])
+	texture_shaders.clear()
+	
 	#for key in pipelines.keys():
 		#if pipelines[key] and RenderingServer.has_rid(pipelines[key]):
 			#rd.free_rid(pipelines[key])
@@ -237,6 +265,8 @@ func render_thread_update(delta: float, cur_grid_size_n: int) -> void:
 		simulate_stam(delta)
 
 func simulate_stam(dt: float) -> void:
+	RenderingServer.global_shader_parameter_set("dt", dt)
+
 	#--- GPU work
 	handle_ignition_gpu()
 	# integrate_s(dt, wind)
@@ -540,7 +570,11 @@ func mark_ignition_changed() -> void:
 
 
 func view_t():
-	pass
+	var shader_name = "view_t"
+	view_gpu_texture_shader.shader_material.shader = texture_shaders[shader_name]
+	var hack_data = rd.buffer_get_data(t_buffer, 0, numX * numY * 4).to_float32_array()
+	view_gpu_texture_shader.shader_material.set_shader_parameter("t", hack_data)
+	
 	#shader_material.set_shader(your_fragment_shader)
 	#viewport.set_shader(shader_material)
 	#var shader_name = "view_t"

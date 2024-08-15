@@ -1,9 +1,18 @@
 shader_type canvas_item;
 
-uniform uint numX;
-uniform uint numY;
-uniform uint viewX;
-uniform uint viewY;
+global uniform float dt;
+global uniform vec2 grid_size;
+global uniform float h;
+global uniform float h2;
+global uniform uint numX;
+global uniform uint numY;
+global uniform uint viewX;
+global uniform uint viewY;
+global uniform vec2 view_ratio;
+global uniform vec2 view_size;
+
+uniform float[4096] t;
+
 uniform sampler2D source_texture;
 
 vec4 get_fire_color(float val) {
@@ -32,7 +41,23 @@ vec4 get_fire_color(float val) {
 }
 
 void fragment() {
-	// Called for every pixel the material is visible on.
-	COLOR = vec4(UV.y, UV.y, UV.y, 1.0);
+    vec2 viewCoord=UV * view_size;
+    uvec2 iviewCoord=uvec2(viewCoord.xy);
+    uvec2 iinputCoord = uvec2(viewCoord * view_ratio);
+    uint idx = iinputCoord.x;
+    uint idy = iinputCoord.y;
+    uint N = numX -uint(1);
+
+    if (idx >= N || idy >= N || idx < uint(1) || idy < uint(1))
+    {
+        COLOR = vec4(0.0);
+    }
+    else
+    {
+        uint cell = idy * numX + idx;
+        float temp = t[cell];
+        COLOR = get_fire_color(temp);
+    }
+
 }
 
