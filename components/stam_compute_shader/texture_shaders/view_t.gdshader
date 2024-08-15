@@ -33,6 +33,6 @@ vec4 get_fire_color(float val) {
 
 void fragment() {
 	// Called for every pixel the material is visible on.
-	COLOR = vec4(1.0, 0, 1.0, 1.0);
+	COLOR = vec4(UV.y, UV.y, UV.y, 1.0);
 }
 

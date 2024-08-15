@@ -1,16 +1,42 @@
-[gd_scene load_steps=4 format=3 uid="uid://cqa7gukfvd5h6"]
+[gd_scene load_steps=6 format=3 uid="uid://cqa7gukfvd5h6"]
 
 [ext_resource type="Script" path="res://components/stam_compute_shader/scripts/fuild_texture_shader_gpu.gd" id="1_eqc0t"]
+[ext_resource type="Shader" path="res://components/stam_compute_shader/texture_shaders/view_t.gdshader" id="2_bdj5q"]
 [ext_resource type="Script" path="res://components/stam_compute_shader/scripts/view_gpu_texture_shader.gd" id="2_ntif3"]
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_ejric"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_3frk7"]
+shader = ExtResource("2_bdj5q")
+shader_parameter/numX = null
+shader_parameter/numY = null
+shader_parameter/viewX = null
+shader_parameter/viewY = null
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_c65w0"]
 viewport_path = NodePath("view gpu texture shader/@SubViewport@17251")
 
 [node name="Fire GPU Texture Shader" type="Node2D"]
 script = ExtResource("1_eqc0t")
+skip_gi_rendering = null
+di_debug_view = null
+debug_div_color_scale = null
+debug_p_color_scale = null
+debug_uv_color_scale = null
+grid_size_n = null
+campfire_width = null
+campfire_height = null
+add_perturbance_probability = null
+num_iters_projection = null
+num_iters_diffuse = null
+diffuse_visc_value = null
+diffuse_diff_value = null
+wind = null
+min_dt = null
+max_dt = null
+paused = null
 
 [node name="view gpu texture shader" type="Sprite2D" parent="."]
-texture = SubResource("ViewportTexture_ejric")
+material = SubResource("ShaderMaterial_3frk7")
+texture = SubResource("ViewportTexture_c65w0")
 offset = Vector2(1.45519e-11, 1.45519e-11)
 flip_v = true
 script = ExtResource("2_ntif3")
