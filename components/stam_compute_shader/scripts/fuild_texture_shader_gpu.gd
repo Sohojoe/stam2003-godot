@@ -27,7 +27,7 @@ extends Node2D
 # ----
 # ----
 
-@onready var view_gpu_compute_shader: Sprite2D = $"view gpu compute shader"
+@onready var view_gpu_texture_shader: Sprite2D = $"view gpu texture shader"
 @onready var editor_label: RichTextLabel = $EditorLabel2
 
 var c_scale = 1.0
@@ -176,7 +176,7 @@ func initialize_compute_code(grid_size: int) -> void:
 	rd = RenderingServer.get_rendering_device()
 	var h2 = 0.5 * h
 
-	var view_texture_size = view_gpu_compute_shader.view_texture_size
+	var view_texture_size = view_gpu_texture_shader.view_texture_size
 
 	var consts_buffer_bytes := PackedInt32Array([numX, numY, view_texture_size, view_texture_size]).to_byte_array()
 	consts_buffer_bytes.append_array(PackedFloat32Array([h, h2]).to_byte_array())
@@ -283,7 +283,7 @@ func simulate_stam(dt: float) -> void:
 func get_uniform(buffer, binding: int):
 	var rd_uniform = RDUniform.new()
 	# handle differnt types of buffers
-	if buffer == view_gpu_compute_shader.view_texture:
+	if buffer == view_gpu_texture_shader.view_texture:
 		rd_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
 	else:
 		rd_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
@@ -343,8 +343,8 @@ func dispatch_view(compute_list, shader_name, uniform_set, pc_bytes=null):
 	rd.compute_list_bind_uniform_set(compute_list, uniform_set, 0)
 	if pc_bytes:
 		rd.compute_list_set_push_constant(compute_list, pc_bytes, pc_bytes.size())
-	var xsteps = int(ceil(view_gpu_compute_shader.view_texture_size / 16.0))
-	var ysteps = int(ceil(view_gpu_compute_shader.view_texture_size / 16.0))
+	var xsteps = int(ceil(view_gpu_texture_shader.view_texture_size / 16.0))
+	var ysteps = int(ceil(view_gpu_texture_shader.view_texture_size / 16.0))
 	rd.compute_list_dispatch(compute_list, xsteps, ysteps, 1)
 
 #---- core functions
@@ -564,7 +564,7 @@ func view_t():
 		shader_name,
 		consts_buffer, 0,
 		t_buffer, 8,
-		view_gpu_compute_shader.view_texture, 20])
+		view_gpu_texture_shader.view_texture, 20])
 		
 	var compute_list = rd.compute_list_begin()
 	dispatch_view(compute_list, shader_name, uniform_set)
@@ -576,7 +576,7 @@ func view_div():
 		shader_name,
 		consts_buffer, 0,
 		div_buffer, 5,
-		view_gpu_compute_shader.view_texture, 20])
+		view_gpu_texture_shader.view_texture, 20])
 
 	var pc_bytes := PackedFloat32Array([debug_div_color_scale]).to_byte_array()
 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
@@ -591,7 +591,7 @@ func view_p():
 		shader_name,
 		consts_buffer, 0,
 		p_buffer, 4,
-		view_gpu_compute_shader.view_texture, 20])
+		view_gpu_texture_shader.view_texture, 20])
 
 	var pc_bytes := PackedFloat32Array([debug_p_color_scale]).to_byte_array()
 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
@@ -607,7 +607,7 @@ func view_uv():
 		consts_buffer, 0,
 		u_buffer, 1,
 		v_buffer, 2,
-		view_gpu_compute_shader.view_texture, 20])
+		view_gpu_texture_shader.view_texture, 20])
 
 	var pc_bytes := PackedFloat32Array([debug_uv_color_scale]).to_byte_array()
 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
