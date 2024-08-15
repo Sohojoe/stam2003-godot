@@ -51,24 +51,6 @@ var shader_file_names = {
 	"view_p": "res://components/stam_compute_shader/shaders/view_p.glsl",
 	"view_uv": "res://components/stam_compute_shader/shaders/view_uv.glsl",
 }
-var shader_morton2D_file_names = {
-	"apply_force": "res://components/stam_compute_shader/experimental/shaders_morton2D/apply_force.glsl",
-	"diffuse": "res://components/stam_compute_shader/experimental/shaders_morton2D/diffuse.glsl",
-	"advect": "res://components/stam_compute_shader/experimental/shaders_morton2D/advect.glsl",
-	"set_bnd_uv_open": "res://components/stam_compute_shader/experimental/shaders_morton2D/set_bnd_uv_open.glsl",
-	"project_compute_divergence": "res://components/stam_compute_shader/experimental/shaders_morton2D/project_1_compute_divergence.glsl",
-	"set_bnd_div": "res://components/stam_compute_shader/experimental/shaders_morton2D/set_bnd_div.glsl",
-	"project_solve_pressure": "res://components/stam_compute_shader/experimental/shaders_morton2D/project_2_solve_pressure.glsl",
-	"set_bnd_p": "res://components/stam_compute_shader/experimental/shaders_morton2D/set_bnd_p.glsl",
-	"project_apply_pressure": "res://components/stam_compute_shader/experimental/shaders_morton2D/project_3_apply_pressure.glsl",
-	"calculate_divergence_centered_grid": "res://components/stam_compute_shader/experimental/shaders_morton2D/calculate_divergence_centered_grid.glsl",
-	"cool_and_lift": "res://components/stam_compute_shader/experimental/shaders_morton2D/cool_and_lift.glsl",
-	"apply_ignition": "res://components/stam_compute_shader/experimental/shaders_morton2D/apply_ignition.glsl",
-	"view_t": "res://components/stam_compute_shader/experimental/shaders_morton2D/view_t.glsl",
-	"view_div": "res://components/stam_compute_shader/experimental/shaders_morton2D/view_div.glsl",
-	"view_p": "res://components/stam_compute_shader/experimental/shaders_morton2D/view_p.glsl",
-	"view_uv": "res://components/stam_compute_shader/experimental/shaders_morton2D/view_uv.glsl",
-}
 
 func _ready():
 	camera = find_camera(get_tree().current_scene)
@@ -198,8 +180,6 @@ func initialize_compute_code(grid_size: int) -> void:
 	s_buffer = rd.storage_buffer_create			(grid_of_bytes_1.size(), grid_of_bytes_1)
 	
 	var filenames = shader_file_names
-	# experiments, not maintained
-	#filenames = shader_morton2D_file_names
 
 	for key in filenames.keys():
 		var file_name = filenames[key]
@@ -283,7 +263,7 @@ func simulate_stam(dt: float) -> void:
 func get_uniform(buffer, binding: int):
 	var rd_uniform = RDUniform.new()
 	# handle differnt types of buffers
-	if buffer == view_gpu_texture_shader.view_texture:
+	if false: #buffer == view_gpu_texture_shader.view_texture:
 		rd_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
 	else:
 		rd_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
@@ -558,17 +538,21 @@ func handle_ignition_gpu():
 func mark_ignition_changed() -> void:
 	ignition_changed = true
 
+
 func view_t():
-	var shader_name = "view_t"
-	var uniform_set = get_uniform_set([
-		shader_name,
-		consts_buffer, 0,
-		t_buffer, 8,
-		view_gpu_texture_shader.view_texture, 20])
-		
-	var compute_list = rd.compute_list_begin()
-	dispatch_view(compute_list, shader_name, uniform_set)
-	rd.compute_list_end()
+	pass
+	#shader_material.set_shader(your_fragment_shader)
+	#viewport.set_shader(shader_material)
+	#var shader_name = "view_t"
+	#var uniform_set = get_uniform_set([
+		#shader_name,
+		#consts_buffer, 0,
+		#t_buffer, 8,
+		#view_gpu_texture_shader.view_texture, 20])
+		#
+	#var compute_list = rd.compute_list_begin()
+	#dispatch_view(compute_list, shader_name, uniform_set)
+	#rd.compute_list_end()
 
 func view_div():
 	var shader_name = "view_div"
