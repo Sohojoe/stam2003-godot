@@ -12,8 +12,8 @@ global uniform vec2 view_ratio;
 global uniform vec2 view_size;
 
 uniform float[4096] t;
+uniform sampler2D i_texture;
 
-uniform sampler2D source_texture;
 
 vec4 get_fire_color(float val) {
     val = clamp(val, 0.0, 1.0);
@@ -44,9 +44,13 @@ void fragment() {
     vec2 viewCoord=UV * view_size;
     uvec2 iviewCoord=uvec2(viewCoord.xy);
     uvec2 iinputCoord = uvec2(viewCoord * view_ratio);
-    uint idx = iinputCoord.x;
-    uint idy = iinputCoord.y;
-    uint N = numX -uint(1);
+
+    float temp = texture(i_texture, UV).r; 
+    COLOR = get_fire_color(temp);
+
+    // uint idx = iinputCoord.x;
+    // uint idy = iinputCoord.y;
+    // uint N = numX -uint(1);
 
     if (idx >= N || idy >= N || idx < uint(1) || idy < uint(1))
     {
@@ -58,6 +62,5 @@ void fragment() {
         float temp = t[cell];
         COLOR = get_fire_color(temp);
     }
-
 }
 

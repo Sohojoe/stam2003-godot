@@ -132,6 +132,18 @@ var t_buffer_prev
 var div_buffer
 var i_buffer
 
+var u_texture
+var u_texture_prev
+var v_texture
+var v_texture_prev
+var s_texture
+var p_texture
+var p_texture_prev
+var t_texture
+var t_texture_prev
+var div_texture
+var i_texture
+var i_texture_rid
 
 var ignition_changed:bool = false
 var grid_size_n_prev: int = -1
@@ -198,7 +210,6 @@ func initialize_compute_code(grid_size: int) -> void:
 	s_buffer = rd.storage_buffer_create			(grid_of_bytes_1.size(), grid_of_bytes_1)
 	
 	var filenames = shader_file_names
-
 	for key in filenames.keys():
 		var file_name = filenames[key]
 		var shader_file = load(file_name)
@@ -211,7 +222,22 @@ func initialize_compute_code(grid_size: int) -> void:
 		var file_name:String = texture_shader_file_names[key]
 		var shader = load(file_name)
 		texture_shaders[key] = shader
-		
+
+	var fmt3 = RDTextureFormat.new()
+	fmt3.width = numX
+	fmt3.height = numY
+	fmt3.format = RenderingDevice.DATA_FORMAT_R32_SFLOAT
+	#fmt3.format = RenderingDevice.DATA_FORMAT_R8_UNORM
+	fmt3.usage_bits = \
+			RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
+			RenderingDevice.TEXTURE_USAGE_CAN_UPDATE_BIT | \
+			RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT | \
+			RenderingDevice.TEXTURE_USAGE_CAN_COPY_TO_BIT | \
+			RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT
+	var view3 = RDTextureView.new()
+	i_texture_rid = rd.texture_create(fmt3, view3)
+	i_texture = Texture2DRD.new()
+	i_texture.texture_rd_rid = i_texture_rid
 
 	campfire_width_prev = -1
 	campfire_height_prev = -1
@@ -563,30 +589,19 @@ func stam_advect_vel(dt: float):
 func handle_ignition_gpu():
 	if (ignition_changed):
 		ignition_changed = false
-		rd.buffer_update(i_buffer, 0, ignition.size() * 4, ignition.to_byte_array())
+		var i_bytes = ignition.to_byte_array()
+		rd.buffer_update(i_buffer, 0, ignition.size() * 4, i_bytes)
+		rd.texture_update(i_texture_rid, 0, i_bytes)
 
 func mark_ignition_changed() -> void:
 	ignition_changed = true
 
-
 func view_t():
 	var shader_name = "view_t"
-	view_gpu_texture_shader.shader_material.shader = texture_shaders[shader_name]
 	var hack_data = rd.buffer_get_data(t_buffer, 0, numX * numY * 4).to_float32_array()
-	view_gpu_texture_shader.shader_material.set_shader_parameter("t", hack_data)
-	
-	#shader_material.set_shader(your_fragment_shader)
-	#viewport.set_shader(shader_material)
-	#var shader_name = "view_t"
-	#var uniform_set = get_uniform_set([
-		#shader_name,
-		#consts_buffer, 0,
-		#t_buffer, 8,
-		#view_gpu_texture_shader.view_texture, 20])
-		#
-	#var compute_list = rd.compute_list_begin()
-	#dispatch_view(compute_list, shader_name, uniform_set)
-	#rd.compute_list_end()
+	view_gpu_texture_shader.material.set_shader_parameter("t", hack_data)
+	view_gpu_texture_shader.material.set_shader_parameter("i_texture", i_texture)	
+	view_gpu_texture_shader.material.shader = texture_shaders[shader_name]
 
 func view_div():
 	var shader_name = "view_div"
