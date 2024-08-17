@@ -1,22 +1,19 @@
-[gd_scene load_steps=6 format=3 uid="uid://cqa7gukfvd5h6"]
+[gd_scene load_steps=5 format=3 uid="uid://cqa7gukfvd5h6"]
 
 [ext_resource type="Script" path="res://components/stam_compute_shader/scripts/fuild_texture_shader_gpu.gd" id="1_eqc0t"]
-[ext_resource type="Shader" path="res://components/stam_compute_shader/texture_shaders/view_t.gdshader" id="2_bdj5q"]
 [ext_resource type="Script" path="res://components/stam_compute_shader/scripts/view_gpu_texture_shader.gd" id="2_ntif3"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_3frk7"]
-shader = ExtResource("2_bdj5q")
-shader_parameter/t = null
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_p2ac3"]
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_c65w0"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_0p8gc"]
 viewport_path = NodePath("view gpu texture shader/@SubViewport@17251")
 
 [node name="Fire GPU Texture Shader" type="Node2D"]
 script = ExtResource("1_eqc0t")
 
 [node name="view gpu texture shader" type="Sprite2D" parent="."]
-material = SubResource("ShaderMaterial_3frk7")
-texture = SubResource("ViewportTexture_c65w0")
+material = SubResource("ShaderMaterial_p2ac3")
+texture = SubResource("ViewportTexture_0p8gc")
 offset = Vector2(1.45519e-11, 1.45519e-11)
 flip_v = true
 script = ExtResource("2_ntif3")
