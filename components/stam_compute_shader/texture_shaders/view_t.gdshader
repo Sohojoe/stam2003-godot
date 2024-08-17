@@ -12,7 +12,7 @@ global uniform vec2 view_ratio;
 global uniform vec2 view_size;
 
 uniform float[4096] t;
-uniform sampler2D i_texture;
+uniform sampler2D i_texture: filter_nearest;
 
 
 vec4 get_fire_color(float val) {
@@ -45,8 +45,8 @@ void fragment() {
     uvec2 iviewCoord=uvec2(viewCoord.xy);
     uvec2 iinputCoord = uvec2(viewCoord * view_ratio);
 
-    float temp = texture(i_texture, UV).r; 
-    COLOR = get_fire_color(temp);
+    // float temp = texture(i_texture, UV).r; 
+    // COLOR = get_fire_color(temp);
 
     uint idx = iinputCoord.x;
     uint idy = iinputCoord.y;
