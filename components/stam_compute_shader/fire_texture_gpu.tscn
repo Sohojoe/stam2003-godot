@@ -3,17 +3,17 @@
 [ext_resource type="Script" path="res://components/stam_compute_shader/scripts/fuild_texture_shader_gpu.gd" id="1_eqc0t"]
 [ext_resource type="Script" path="res://components/stam_compute_shader/scripts/view_gpu_texture_shader.gd" id="2_ntif3"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_p2ac3"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_75nem"]
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_0p8gc"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_gefxr"]
 viewport_path = NodePath("view gpu texture shader/@SubViewport@17251")
 
 [node name="Fire GPU Texture Shader" type="Node2D"]
 script = ExtResource("1_eqc0t")
 
 [node name="view gpu texture shader" type="Sprite2D" parent="."]
-material = SubResource("ShaderMaterial_p2ac3")
-texture = SubResource("ViewportTexture_0p8gc")
+material = SubResource("ShaderMaterial_75nem")
+texture = SubResource("ViewportTexture_gefxr")
 offset = Vector2(1.45519e-11, 1.45519e-11)
 flip_v = true
 script = ExtResource("2_ntif3")

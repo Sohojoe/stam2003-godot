@@ -132,18 +132,39 @@ var t_buffer_prev
 var div_buffer
 var i_buffer
 
-var u_texture
-var u_texture_prev
-var v_texture
-var v_texture_prev
-var s_texture
-var p_texture
-var p_texture_prev
-var t_texture
-var t_texture_prev
-var div_texture
-var i_texture
-var i_texture_rid
+var u_texture:Texture2DRD
+var u_texture_rid:RID
+var u_texture_fb:RID
+var u_texture_prev:Texture2DRD
+var u_texture_prev_rid:RID
+var u_texture_prev_fb:RID
+var v_texture:Texture2DRD
+var v_texture_rid:RID
+var v_texture_fb:RID
+var v_texture_prev:Texture2DRD
+var v_texture_prev_rid:RID
+var v_texture_prev_fb:RID
+var s_texture:Texture2DRD
+var s_texture_rid:RID
+var s_texture_fb:RID
+var p_texture:Texture2DRD
+var p_texture_rid:RID
+var p_texture_fb:RID
+var p_texture_prev:Texture2DRD
+var p_texture_prev_rid:RID
+var p_texture_prev_fb:RID
+var t_texture:Texture2DRD
+var t_texture_rid:RID
+var t_texture_fb:RID
+var t_texture_prev:Texture2DRD
+var t_texture_prev_rid:RID
+var t_texture_prev_fb:RID
+var div_texture:Texture2DRD
+var div_texture_rid:RID
+var div_texture_fb:RID
+var i_texture:Texture2DRD
+var i_texture_rid:RID
+var i_texture_fb:RID
 
 var ignition_changed:bool = false
 var grid_size_n_prev: int = -1
