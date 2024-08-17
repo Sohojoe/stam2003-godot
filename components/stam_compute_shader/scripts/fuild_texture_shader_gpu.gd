@@ -383,8 +383,8 @@ func free_previous_resources():
 		rd.free_rid(shaders[key])
 	shaders.clear()
 	
-	for key in texture_shaders.keys():
-		rd.free_rid(texture_shaders[key])
+	#for key in texture_shaders.keys():
+		#rd.free_rid(texture_shaders[key])
 	texture_shaders.clear()
 	
 	#for key in pipelines.keys():
@@ -456,11 +456,29 @@ func swap_u_buffer():
 	var tmp = u_buffer
 	u_buffer = u_buffer_prev
 	u_buffer_prev = tmp
+	var tmp_fb = u_texture_fb
+	u_texture_fb = u_texture_prev_fb
+	u_texture_prev_fb = tmp_fb
+	var tmp_rid = u_texture_rid
+	u_texture_rid = u_texture_prev_rid
+	u_texture_prev_rid = tmp_rid
+	var tmp_t = u_texture
+	u_texture = u_texture_prev
+	u_texture_prev = tmp_t
 
 func swap_v_buffer():
 	var tmp = v_buffer
 	v_buffer = v_buffer_prev
 	v_buffer_prev = tmp
+	var tmp_fb = v_texture_fb
+	v_texture_fb = v_texture_prev_fb
+	v_texture_prev_fb = tmp_fb
+	var tmp_rid = v_texture_rid
+	v_texture_rid = v_texture_prev_rid
+	v_texture_prev_rid = tmp_rid
+	var tmp_t = v_texture
+	v_texture = v_texture_prev
+	v_texture_prev = tmp_t
 
 func swap_uv_buffers():
 	swap_u_buffer()
@@ -470,11 +488,29 @@ func swap_t_buffer():
 	var tmp = t_buffer
 	t_buffer = t_buffer_prev
 	t_buffer_prev = tmp
+	var tmp_fb = t_texture_fb
+	t_texture_fb = t_texture_prev_fb
+	t_texture_prev_fb = tmp_fb
+	var tmp_rid = t_texture_rid
+	t_texture_rid = t_texture_prev_rid
+	t_texture_prev_rid = tmp_rid
+	var tmp_t = t_texture
+	t_texture = t_texture_prev
+	t_texture_prev = tmp_t
 
 func swap_p_buffer():
 	var tmp = p_buffer
 	p_buffer = p_buffer_prev
 	p_buffer_prev = tmp
+	var tmp_fb = p_texture_fb
+	p_texture_fb = p_texture_prev_fb
+	p_texture_prev_fb = tmp_fb
+	var tmp_rid = p_texture_rid
+	p_texture_rid = p_texture_prev_rid
+	p_texture_prev_rid = tmp_rid
+	var tmp_t = p_texture
+	p_texture = p_texture_prev
+	p_texture_prev = tmp_t
 
 func dispatch(compute_list, shader_name, uniform_set, pc_bytes=null):
 	rd.compute_list_bind_compute_pipeline(compute_list, pipelines[shader_name])
