@@ -48,9 +48,9 @@ void fragment() {
     float temp = texture(i_texture, UV).r; 
     COLOR = get_fire_color(temp);
 
-    // uint idx = iinputCoord.x;
-    // uint idy = iinputCoord.y;
-    // uint N = numX -uint(1);
+    uint idx = iinputCoord.x;
+    uint idy = iinputCoord.y;
+    uint N = numX -uint(1);
 
     if (idx >= N || idy >= N || idx < uint(1) || idy < uint(1))
     {
