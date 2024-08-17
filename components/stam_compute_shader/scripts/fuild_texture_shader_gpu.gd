@@ -244,24 +244,68 @@ func initialize_compute_code(grid_size: int) -> void:
 		var shader = load(file_name)
 		texture_shaders[key] = shader
 
-	var fmt3 = RDTextureFormat.new()
-	fmt3.width = numX
-	fmt3.height = numY
-	fmt3.format = RenderingDevice.DATA_FORMAT_R32_SFLOAT
-	#fmt3.format = RenderingDevice.DATA_FORMAT_R8_UNORM
-	fmt3.usage_bits = \
+	var fmt3_R32_SFLOAT := RDTextureFormat.new()
+	fmt3_R32_SFLOAT.width = numX
+	fmt3_R32_SFLOAT.height = numY
+	fmt3_R32_SFLOAT.format = RenderingDevice.DATA_FORMAT_R32_SFLOAT
+	#fmt3_R32_SFLOAT.format = RenderingDevice.DATA_FORMAT_R8_UNORM
+	fmt3_R32_SFLOAT.usage_bits = \
 			RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
 			RenderingDevice.TEXTURE_USAGE_CAN_UPDATE_BIT | \
 			RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT | \
 			RenderingDevice.TEXTURE_USAGE_CAN_COPY_TO_BIT | \
-			RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT
+			RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT | \
+			RenderingDevice.TEXTURE_USAGE_COLOR_ATTACHMENT_BIT
 	var view3 = RDTextureView.new()
-	i_texture_rid = rd.texture_create(fmt3, view3)
+	u_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	u_texture = Texture2DRD.new()
+	u_texture.texture_rd_rid = u_texture_rid
+	u_texture_fb = rd.framebuffer_create([u_texture_rid])
+	u_texture_prev_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	u_texture_prev = Texture2DRD.new()
+	u_texture_prev.texture_rd_rid = u_texture_prev_rid
+	u_texture_prev_fb = rd.framebuffer_create([u_texture_prev_rid])
+	v_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	v_texture = Texture2DRD.new()
+	v_texture.texture_rd_rid = v_texture_rid
+	v_texture_fb = rd.framebuffer_create([v_texture_rid])
+	v_texture_prev_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	v_texture_prev = Texture2DRD.new()
+	v_texture_prev.texture_rd_rid = v_texture_prev_rid
+	v_texture_prev_fb = rd.framebuffer_create([v_texture_prev_rid])
+	s_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	s_texture = Texture2DRD.new()
+	s_texture.texture_rd_rid = s_texture_rid
+	s_texture_fb = rd.framebuffer_create([s_texture_rid])
+	p_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	p_texture = Texture2DRD.new()
+	p_texture.texture_rd_rid = p_texture_rid
+	p_texture_fb = rd.framebuffer_create([p_texture_rid])
+	p_texture_prev_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	p_texture_prev = Texture2DRD.new()
+	p_texture_prev.texture_rd_rid = p_texture_prev_rid
+	p_texture_prev_fb = rd.framebuffer_create([p_texture_prev_rid])
+	t_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	t_texture = Texture2DRD.new()
+	t_texture.texture_rd_rid = t_texture_rid
+	t_texture_fb = rd.framebuffer_create([t_texture_rid])
+	t_texture_prev_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	t_texture_prev = Texture2DRD.new()
+	t_texture_prev.texture_rd_rid = t_texture_prev_rid
+	t_texture_prev_fb = rd.framebuffer_create([t_texture_prev_rid])
+	div_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	div_texture = Texture2DRD.new()
+	div_texture.texture_rd_rid = div_texture_rid
+	div_texture_fb = rd.framebuffer_create([div_texture_rid])
+	i_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
 	i_texture = Texture2DRD.new()
 	i_texture.texture_rd_rid = i_texture_rid
+	i_texture_fb = rd.framebuffer_create([i_texture_rid])
+	
 
 	campfire_width_prev = -1
 	campfire_height_prev = -1
+
 
 func free_previous_resources():
 
@@ -289,7 +333,51 @@ func free_previous_resources():
 		rd.free_rid(i_buffer)
 	if s_buffer:
 		rd.free_rid(s_buffer)
-	
+
+	if u_texture:
+		rd.free_rid(u_texture_fb)
+		rd.free_rid(u_texture_rid)
+		u_texture = null
+	if u_texture_prev:
+		rd.free_rid(u_texture_prev_fb)
+		rd.free_rid(u_texture_prev_rid)
+		u_texture_prev = null
+	if v_texture:
+		rd.free_rid(v_texture_fb)
+		rd.free_rid(v_texture_rid)
+		v_texture = null
+	if v_texture_prev:
+		rd.free_rid(v_texture_prev_fb)
+		rd.free_rid(v_texture_prev_rid)
+		v_texture_prev = null
+	if s_texture:
+		rd.free_rid(s_texture_fb)
+		rd.free_rid(s_texture_rid)
+		s_texture = null
+	if p_texture:
+		rd.free_rid(p_texture_fb)
+		rd.free_rid(p_texture_rid)
+		p_texture = null
+	if p_texture_prev:
+		rd.free_rid(p_texture_prev_fb)
+		rd.free_rid(p_texture_prev_rid)
+		p_texture_prev = null
+	if t_texture:
+		rd.free_rid(t_texture_fb)
+		rd.free_rid(t_texture_rid)
+		t_texture = null
+	if t_texture_prev:
+		rd.free_rid(t_texture_prev_fb)
+		rd.free_rid(t_texture_prev_rid)
+		t_texture_prev = null
+	if div_texture:
+		rd.free_rid(div_texture_fb)
+		rd.free_rid(div_texture_rid)
+		div_texture = null
+	if i_texture:
+		rd.free_rid(i_texture_fb)
+		rd.free_rid(i_texture_rid)
+		i_texture = null
 	
 	for key in shaders.keys():
 		rd.free_rid(shaders[key])
