@@ -1,22 +1,11 @@
-[gd_scene load_steps=5 format=3 uid="uid://dta08rssahtkw"]
+[gd_scene load_steps=3 format=3 uid="uid://dta08rssahtkw"]
 
-[ext_resource type="PackedScene" uid="uid://p0chnegfgihs" path="res://components/stam_compute_shader/fire_cpu.tscn" id="1_7ttr5"]
-[ext_resource type="PackedScene" uid="uid://cqa7gukfvd5h6" path="res://components/stam_compute_shader/fire_texture_gpu.tscn" id="3_hbnri"]
+[ext_resource type="PackedScene" path="res://components/stam_compute_shader/fire_texture_gpu.tscn" id="3_hbnri"]
 [ext_resource type="PackedScene" uid="uid://dcmmmh2lbg4dw" path="res://components/simple_ui/simple_ui.tscn" id="3_hwi7c"]
-[ext_resource type="PackedScene" uid="uid://c3m5l2lt31esr" path="res://components/stam_compute_shader/fire_gpu.tscn" id="3_mqjyj"]
 
 [node name="Node2D" type="Node2D"]
 
 [node name="Camera2D" type="Camera2D" parent="."]
-
-[node name="Fire CPU Compute Shader" parent="." instance=ExtResource("1_7ttr5")]
-visible = false
-grid_size_n = 128
-view_texture_size = 4096
-
-[node name="Fire GPU Compute Shader" parent="." instance=ExtResource("3_mqjyj")]
-visible = false
-scale = Vector2(0.6, 0.6)
 
 [node name="Fire GPU Texture Shader" parent="." instance=ExtResource("3_hbnri")]
 scale = Vector2(0.6, 0.6)
