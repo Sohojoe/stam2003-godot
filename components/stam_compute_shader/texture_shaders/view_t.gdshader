@@ -11,8 +11,8 @@ global uniform uint viewY;
 global uniform vec2 view_ratio;
 global uniform vec2 view_size;
 
-uniform float[4096] t;
-uniform sampler2D i_texture: filter_nearest;
+// uniform float[4096] t;
+uniform sampler2D t_texture: filter_nearest;
 
 
 vec4 get_fire_color(float val) {
@@ -41,26 +41,26 @@ vec4 get_fire_color(float val) {
 }
 
 void fragment() {
-    vec2 viewCoord=UV * view_size;
-    uvec2 iviewCoord=uvec2(viewCoord.xy);
-    uvec2 iinputCoord = uvec2(viewCoord * view_ratio);
+    float temp = texture(t_texture, UV).r; 
+    COLOR = get_fire_color(temp);
 
-    // float temp = texture(i_texture, UV).r; 
-    // COLOR = get_fire_color(temp);
+    // vec2 viewCoord=UV * view_size;
+    // uvec2 iviewCoord=uvec2(viewCoord.xy);
+    // uvec2 iinputCoord = uvec2(viewCoord * view_ratio);
 
-    uint idx = iinputCoord.x;
-    uint idy = iinputCoord.y;
-    uint N = numX -uint(1);
+    // uint idx = iinputCoord.x;
+    // uint idy = iinputCoord.y;
+    // uint N = numX -uint(1);
 
-    if (idx >= N || idy >= N || idx < uint(1) || idy < uint(1))
-    {
-        COLOR = vec4(0.0);
-    }
-    else
-    {
-        uint cell = idy * numX + idx;
-        float temp = t[cell];
-        COLOR = get_fire_color(temp);
-    }
+    // if (idx >= N || idy >= N || idx < uint(1) || idy < uint(1))
+    // {
+    //     COLOR = vec4(0.0);
+    // }
+    // else
+    // {
+    //     uint cell = idy * numX + idx;
+    //     float temp = t[cell];
+    //     COLOR = get_fire_color(temp);
+    // }
 }
 

@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://cvd2k58trksbs"
+path="res://.godot/imported/calculate_divergence_centered_grid.glsl-07e8467a05964eb84b32a94b828a93a6.res"
+
+[deps]
+
+source_file="res://components/stam_compute_shader/texture_shaders/calculate_divergence_centered_grid.glsl"
+dest_files=["res://.godot/imported/calculate_divergence_centered_grid.glsl-07e8467a05964eb84b32a94b828a93a6.res"]
+
+[params]
+

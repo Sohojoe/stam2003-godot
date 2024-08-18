@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://biicho515v66y"
+path="res://.godot/imported/advect.glsl-bd3b45e8d164098f83ab9b65e7a129a1.res"
+
+[deps]
+
+source_file="res://components/stam_compute_shader/texture_shaders/advect.glsl"
+dest_files=["res://.godot/imported/advect.glsl-bd3b45e8d164098f83ab9b65e7a129a1.res"]
+
+[params]
+
