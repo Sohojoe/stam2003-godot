@@ -199,7 +199,7 @@ func initialize_compute_code(grid_size: int) -> void:
 	
 	var filenames = shader_file_names
 	# experiments, not maintained
-	#filenames = shader_morton2D_file_names
+	filenames = shader_morton2D_file_names
 
 	for key in filenames.keys():
 		var file_name = filenames[key]
