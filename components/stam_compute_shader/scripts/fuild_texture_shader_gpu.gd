@@ -121,51 +121,29 @@ var shaders = {}
 var texture_shaders = {}
 var uniform_sets = {}
 var consts_buffer
-var u_buffer
-var u_buffer_prev
-var v_buffer
-var v_buffer_prev
-var s_buffer
-var p_buffer
-var p_buffer_prev
-var t_buffer
-var t_buffer_prev
-var div_buffer
-var i_buffer
 
 var u_texture:Texture2DRD
 var u_texture_rid:RID
-var u_texture_fb:RID
 var u_texture_prev:Texture2DRD
 var u_texture_prev_rid:RID
-var u_texture_prev_fb:RID
 var v_texture:Texture2DRD
 var v_texture_rid:RID
-var v_texture_fb:RID
 var v_texture_prev:Texture2DRD
 var v_texture_prev_rid:RID
-var v_texture_prev_fb:RID
 var s_texture:Texture2DRD
 var s_texture_rid:RID
-var s_texture_fb:RID
 var p_texture:Texture2DRD
 var p_texture_rid:RID
-var p_texture_fb:RID
 var p_texture_prev:Texture2DRD
 var p_texture_prev_rid:RID
-var p_texture_prev_fb:RID
 var t_texture:Texture2DRD
 var t_texture_rid:RID
-var t_texture_fb:RID
 var t_texture_prev:Texture2DRD
 var t_texture_prev_rid:RID
-var t_texture_prev_fb:RID
 var div_texture:Texture2DRD
 var div_texture_rid:RID
-var div_texture_fb:RID
 var i_texture:Texture2DRD
 var i_texture_rid:RID
-var i_texture_fb:RID
 var sampler_nearest:RID
 
 
@@ -218,20 +196,6 @@ func initialize_compute_code(grid_size: int) -> void:
 	RenderingServer.global_shader_parameter_set("viewY", view_texture_size)
 	RenderingServer.global_shader_parameter_set("view_ratio", view_ratio)
 	RenderingServer.global_shader_parameter_set("view_size", view_size)
-
-	var grid_of_bytes_0 = ignition.to_byte_array()
-	var grid_of_bytes_1 = state.to_byte_array()
-	u_buffer = rd.storage_buffer_create			(grid_of_bytes_0.size(), grid_of_bytes_0)
-	u_buffer_prev = rd.storage_buffer_create		(grid_of_bytes_0.size(), grid_of_bytes_0)
-	v_buffer = rd.storage_buffer_create			(grid_of_bytes_0.size(), grid_of_bytes_0)
-	v_buffer_prev = rd.storage_buffer_create		(grid_of_bytes_0.size(), grid_of_bytes_0)
-	p_buffer = rd.storage_buffer_create			(grid_of_bytes_0.size(), grid_of_bytes_0)
-	p_buffer_prev = rd.storage_buffer_create		(grid_of_bytes_0.size(), grid_of_bytes_0)
-	div_buffer = rd.storage_buffer_create		(grid_of_bytes_0.size(), grid_of_bytes_0)
-	t_buffer = rd.storage_buffer_create			(grid_of_bytes_0.size(), grid_of_bytes_0)
-	t_buffer_prev = rd.storage_buffer_create		(grid_of_bytes_0.size(), grid_of_bytes_0)
-	i_buffer = rd.storage_buffer_create			(grid_of_bytes_0.size(), grid_of_bytes_0)
-	s_buffer = rd.storage_buffer_create			(grid_of_bytes_1.size(), grid_of_bytes_1)
 	
 	var filenames = shader_file_names
 	for key in filenames.keys():
@@ -260,47 +224,36 @@ func initialize_compute_code(grid_size: int) -> void:
 	u_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
 	u_texture = Texture2DRD.new()
 	u_texture.texture_rd_rid = u_texture_rid
-	u_texture_fb = rd.framebuffer_create([u_texture_rid])
 	u_texture_prev_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
 	u_texture_prev = Texture2DRD.new()
 	u_texture_prev.texture_rd_rid = u_texture_prev_rid
-	u_texture_prev_fb = rd.framebuffer_create([u_texture_prev_rid])
 	v_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
 	v_texture = Texture2DRD.new()
 	v_texture.texture_rd_rid = v_texture_rid
-	v_texture_fb = rd.framebuffer_create([v_texture_rid])
 	v_texture_prev_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
 	v_texture_prev = Texture2DRD.new()
 	v_texture_prev.texture_rd_rid = v_texture_prev_rid
-	v_texture_prev_fb = rd.framebuffer_create([v_texture_prev_rid])
 	s_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
 	s_texture = Texture2DRD.new()
 	s_texture.texture_rd_rid = s_texture_rid
-	s_texture_fb = rd.framebuffer_create([s_texture_rid])
 	p_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
 	p_texture = Texture2DRD.new()
 	p_texture.texture_rd_rid = p_texture_rid
-	p_texture_fb = rd.framebuffer_create([p_texture_rid])
 	p_texture_prev_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
 	p_texture_prev = Texture2DRD.new()
 	p_texture_prev.texture_rd_rid = p_texture_prev_rid
-	p_texture_prev_fb = rd.framebuffer_create([p_texture_prev_rid])
 	t_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
 	t_texture = Texture2DRD.new()
 	t_texture.texture_rd_rid = t_texture_rid
-	t_texture_fb = rd.framebuffer_create([t_texture_rid])
 	t_texture_prev_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
 	t_texture_prev = Texture2DRD.new()
 	t_texture_prev.texture_rd_rid = t_texture_prev_rid
-	t_texture_prev_fb = rd.framebuffer_create([t_texture_prev_rid])
 	div_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
 	div_texture = Texture2DRD.new()
 	div_texture.texture_rd_rid = div_texture_rid
-	div_texture_fb = rd.framebuffer_create([div_texture_rid])
 	i_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
 	i_texture = Texture2DRD.new()
 	i_texture.texture_rd_rid = i_texture_rid
-	i_texture_fb = rd.framebuffer_create([i_texture_rid])
 
 	var i_bytes = state.to_byte_array()
 	rd.texture_update(s_texture_rid, 0, i_bytes)
@@ -323,71 +276,38 @@ func free_previous_resources():
 
 	if consts_buffer:
 		rd.free_rid(consts_buffer)
-	if u_buffer:
-		rd.free_rid(u_buffer)
-	if u_buffer_prev:
-		rd.free_rid(u_buffer_prev)
-	if v_buffer:
-		rd.free_rid(v_buffer)
-	if v_buffer_prev:
-		rd.free_rid(v_buffer_prev)
-	if p_buffer:
-		rd.free_rid(p_buffer)
-	if p_buffer_prev:
-		rd.free_rid(p_buffer_prev)
-	if div_buffer:
-		rd.free_rid(div_buffer)
-	if t_buffer:
-		rd.free_rid(t_buffer)
-	if t_buffer_prev:
-		rd.free_rid(t_buffer_prev)
-	if i_buffer:
-		rd.free_rid(i_buffer)
-	if s_buffer:
-		rd.free_rid(s_buffer)
 
 	if u_texture:
-		rd.free_rid(u_texture_fb)
 		rd.free_rid(u_texture_rid)
 		u_texture = null
 	if u_texture_prev:
-		rd.free_rid(u_texture_prev_fb)
 		rd.free_rid(u_texture_prev_rid)
 		u_texture_prev = null
 	if v_texture:
-		rd.free_rid(v_texture_fb)
 		rd.free_rid(v_texture_rid)
 		v_texture = null
 	if v_texture_prev:
-		rd.free_rid(v_texture_prev_fb)
 		rd.free_rid(v_texture_prev_rid)
 		v_texture_prev = null
 	if s_texture:
-		rd.free_rid(s_texture_fb)
 		rd.free_rid(s_texture_rid)
 		s_texture = null
 	if p_texture:
-		rd.free_rid(p_texture_fb)
 		rd.free_rid(p_texture_rid)
 		p_texture = null
 	if p_texture_prev:
-		rd.free_rid(p_texture_prev_fb)
 		rd.free_rid(p_texture_prev_rid)
 		p_texture_prev = null
 	if t_texture:
-		rd.free_rid(t_texture_fb)
 		rd.free_rid(t_texture_rid)
 		t_texture = null
 	if t_texture_prev:
-		rd.free_rid(t_texture_prev_fb)
 		rd.free_rid(t_texture_prev_rid)
 		t_texture_prev = null
 	if div_texture:
-		rd.free_rid(div_texture_fb)
 		rd.free_rid(div_texture_rid)
 		div_texture = null
 	if i_texture:
-		rd.free_rid(i_texture_fb)
 		rd.free_rid(i_texture_rid)
 		i_texture = null
 	if sampler_nearest:
@@ -468,12 +388,6 @@ func get_uniform_set(values: Array):
 	return uniform_set
 
 func swap_u_buffer():
-	var tmp = u_buffer
-	u_buffer = u_buffer_prev
-	u_buffer_prev = tmp
-	var tmp_fb = u_texture_fb
-	u_texture_fb = u_texture_prev_fb
-	u_texture_prev_fb = tmp_fb
 	var tmp_rid = u_texture_rid
 	u_texture_rid = u_texture_prev_rid
 	u_texture_prev_rid = tmp_rid
@@ -482,12 +396,6 @@ func swap_u_buffer():
 	u_texture_prev = tmp_t
 
 func swap_v_buffer():
-	var tmp = v_buffer
-	v_buffer = v_buffer_prev
-	v_buffer_prev = tmp
-	var tmp_fb = v_texture_fb
-	v_texture_fb = v_texture_prev_fb
-	v_texture_prev_fb = tmp_fb
 	var tmp_rid = v_texture_rid
 	v_texture_rid = v_texture_prev_rid
 	v_texture_prev_rid = tmp_rid
@@ -500,12 +408,6 @@ func swap_uv_buffers():
 	swap_v_buffer()
 
 func swap_t_buffer():
-	var tmp = t_buffer
-	t_buffer = t_buffer_prev
-	t_buffer_prev = tmp
-	var tmp_fb = t_texture_fb
-	t_texture_fb = t_texture_prev_fb
-	t_texture_prev_fb = tmp_fb
 	var tmp_rid = t_texture_rid
 	t_texture_rid = t_texture_prev_rid
 	t_texture_prev_rid = tmp_rid
@@ -514,12 +416,6 @@ func swap_t_buffer():
 	t_texture_prev = tmp_t
 
 func swap_p_buffer():
-	var tmp = p_buffer
-	p_buffer = p_buffer_prev
-	p_buffer_prev = tmp
-	var tmp_fb = p_texture_fb
-	p_texture_fb = p_texture_prev_fb
-	p_texture_prev_fb = tmp_fb
 	var tmp_rid = p_texture_rid
 	p_texture_rid = p_texture_prev_rid
 	p_texture_prev_rid = tmp_rid
@@ -749,7 +645,6 @@ func handle_ignition_gpu():
 	if (ignition_changed):
 		ignition_changed = false
 		var i_bytes = ignition.to_byte_array()
-		# rd.buffer_update(i_buffer, 0, ignition.size() * 4, i_bytes)
 		rd.texture_update(i_texture_rid, 0, i_bytes)
 
 func mark_ignition_changed() -> void:
