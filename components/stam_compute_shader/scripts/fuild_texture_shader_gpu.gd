@@ -96,14 +96,14 @@ func handle_ignition_cpu():
 	campfire_height_prev = campfire_height
 
 	# update ignition
-	ignition.fill(0.0) # Note: this is not efficient, lol
+	ignition.fill(0) # Note: this is not efficient, lol
 	# var campfire_start = int((numX/2.)-numX/2.*campfire_width)
 	# var campfire_end = int((numX/2.)+numX/2.*campfire_width)
 	var campfire_start = int((numX/2.)-64/2.*campfire_width)
 	var campfire_end = int((numX/2.)+64/2.*campfire_width)	
 	for row in range(1, 1+campfire_height):
 		for col in range(campfire_start, campfire_end):
-			ignition[row * numY + col] = 1.0
+			ignition[row * numY + col] = 255
 	RenderingServer.call_on_render_thread(mark_ignition_changed)
 
 func restart():
@@ -117,8 +117,8 @@ func toggle_is_updating():
 var numX: int
 var numY: int
 
-var state: PackedFloat32Array
-var ignition: PackedFloat32Array
+var state: PackedByteArray
+var ignition: PackedByteArray
 
 var rd: RenderingDevice
 var pipelines = {}
@@ -171,12 +171,12 @@ func initialize_compute_code(grid_size: int) -> void:
 	var num_cells = grid_size*grid_size
 	var h = sqrt(sim_width * sim_height / num_cells)
 	#var h = sqrt(1 / (64*64))
-	state = PackedFloat32Array()
+	state = PackedByteArray()
 	state.resize(numX * numY)
-	state.fill(1.0)
-	ignition = PackedFloat32Array()
+	state.fill(255)
+	ignition = PackedByteArray()
 	ignition.resize(numX * numY)
-	ignition.fill(0.0)
+	ignition.fill(0)
 	
 	rd = RenderingServer.get_rendering_device()
 	var h2 = 0.5 * h
@@ -211,57 +211,66 @@ func initialize_compute_code(grid_size: int) -> void:
 		var shader = rd.shader_create_from_spirv(shader_spirv)
 		shaders[key] = shader
 		pipelines[key] = rd.compute_pipeline_create(shader)
-		
-
 
 	var fmt3_R32_SFLOAT := RDTextureFormat.new()
 	fmt3_R32_SFLOAT.width = numX
 	fmt3_R32_SFLOAT.height = numY
 	fmt3_R32_SFLOAT.format = RenderingDevice.DATA_FORMAT_R32_SFLOAT
-	#fmt3_R32_SFLOAT.format = RenderingDevice.DATA_FORMAT_R8_UNORM
 	fmt3_R32_SFLOAT.usage_bits = \
 			RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
 			RenderingDevice.TEXTURE_USAGE_CAN_UPDATE_BIT | \
-			RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT | \
-			RenderingDevice.TEXTURE_USAGE_CAN_COPY_TO_BIT | \
-			RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT | \
-			RenderingDevice.TEXTURE_USAGE_COLOR_ATTACHMENT_BIT
+			RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT
+	var fmt3_R16_SFLOAT := RDTextureFormat.new()
+	fmt3_R16_SFLOAT.width = numX
+	fmt3_R16_SFLOAT.height = numY
+	fmt3_R16_SFLOAT.format = RenderingDevice.DATA_FORMAT_R16_SFLOAT
+	fmt3_R16_SFLOAT.usage_bits = \
+			RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
+			RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT
+	var fmt3_R8_UNORM := RDTextureFormat.new()
+	fmt3_R8_UNORM.width = numX
+	fmt3_R8_UNORM.height = numY
+	fmt3_R8_UNORM.format = RenderingDevice.DATA_FORMAT_R8_UNORM
+	fmt3_R8_UNORM.usage_bits = \
+			RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
+			RenderingDevice.TEXTURE_USAGE_CAN_UPDATE_BIT | \
+			RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT
 	var view3 = RDTextureView.new()
-	u_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	u_texture_rid = rd.texture_create(fmt3_R16_SFLOAT, view3)
 	u_texture = Texture2DRD.new()
 	u_texture.texture_rd_rid = u_texture_rid
-	u_texture_prev_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	u_texture_prev_rid = rd.texture_create(fmt3_R16_SFLOAT, view3)
 	u_texture_prev = Texture2DRD.new()
 	u_texture_prev.texture_rd_rid = u_texture_prev_rid
-	v_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	v_texture_rid = rd.texture_create(fmt3_R16_SFLOAT, view3)
 	v_texture = Texture2DRD.new()
 	v_texture.texture_rd_rid = v_texture_rid
-	v_texture_prev_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	v_texture_prev_rid = rd.texture_create(fmt3_R16_SFLOAT, view3)
 	v_texture_prev = Texture2DRD.new()
 	v_texture_prev.texture_rd_rid = v_texture_prev_rid
-	s_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	s_texture_rid = rd.texture_create(fmt3_R8_UNORM, view3)
 	s_texture = Texture2DRD.new()
 	s_texture.texture_rd_rid = s_texture_rid
-	p_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	p_texture_rid = rd.texture_create(fmt3_R16_SFLOAT, view3)
 	p_texture = Texture2DRD.new()
 	p_texture.texture_rd_rid = p_texture_rid
-	p_texture_prev_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	p_texture_prev_rid = rd.texture_create(fmt3_R16_SFLOAT, view3)
 	p_texture_prev = Texture2DRD.new()
 	p_texture_prev.texture_rd_rid = p_texture_prev_rid
-	t_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	t_texture_rid = rd.texture_create(fmt3_R16_SFLOAT, view3)
 	t_texture = Texture2DRD.new()
 	t_texture.texture_rd_rid = t_texture_rid
-	t_texture_prev_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	t_texture_prev_rid = rd.texture_create(fmt3_R16_SFLOAT, view3)
 	t_texture_prev = Texture2DRD.new()
 	t_texture_prev.texture_rd_rid = t_texture_prev_rid
-	div_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	div_texture_rid = rd.texture_create(fmt3_R16_SFLOAT, view3)
 	div_texture = Texture2DRD.new()
 	div_texture.texture_rd_rid = div_texture_rid
-	i_texture_rid = rd.texture_create(fmt3_R32_SFLOAT, view3)
+	i_texture_rid = rd.texture_create(fmt3_R8_UNORM, view3)
 	i_texture = Texture2DRD.new()
 	i_texture.texture_rd_rid = i_texture_rid
 
-	var i_bytes = state.to_byte_array()
+	var i_bytes = state
 	rd.texture_update(s_texture_rid, 0, i_bytes)
 
 	var ss = RDSamplerState.new()
@@ -652,8 +661,7 @@ func stam_advect_vel(dt: float):
 func handle_ignition_gpu():
 	if (ignition_changed):
 		ignition_changed = false
-		var i_bytes = ignition.to_byte_array()
-		rd.texture_update(i_texture_rid, 0, i_bytes)
+		rd.texture_update(i_texture_rid, 0, ignition)
 
 func mark_ignition_changed() -> void:
 	ignition_changed = true
