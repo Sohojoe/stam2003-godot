@@ -43,24 +43,5 @@ vec4 get_fire_color(float val) {
 void fragment() {
     float temp = texture(t_texture, UV).r; 
     COLOR = get_fire_color(temp);
-
-    // vec2 viewCoord=UV * view_size;
-    // uvec2 iviewCoord=uvec2(viewCoord.xy);
-    // uvec2 iinputCoord = uvec2(viewCoord * view_ratio);
-
-    // uint idx = iinputCoord.x;
-    // uint idy = iinputCoord.y;
-    // uint N = numX -uint(1);
-
-    // if (idx >= N || idy >= N || idx < uint(1) || idy < uint(1))
-    // {
-    //     COLOR = vec4(0.0);
-    // }
-    // else
-    // {
-    //     uint cell = idy * numX + idx;
-    //     float temp = t[cell];
-    //     COLOR = get_fire_color(temp);
-    // }
 }
 

@@ -54,6 +54,7 @@ var shader_file_names = {
 var texture_shader_file_names = {
 	"apply_ignition": "res://components/stam_compute_shader/texture_shaders/apply_ignition.gdshader",
 	"view_t": "res://components/stam_compute_shader/texture_shaders/view_t.gdshader",
+	"view_p": "res://components/stam_compute_shader/texture_shaders/view_p.gdshader",
 }
 func _ready():
 	camera = find_camera(get_tree().current_scene)
@@ -63,7 +64,6 @@ func _ready():
 	RenderingServer.call_on_render_thread(initialize_compute_code.bind(grid_size_n))
 	# disbale 	editor_label
 	editor_label.visible = false
-
 
 func _process(delta):
 	if not is_visible_in_tree():
@@ -106,6 +106,9 @@ func handle_ignition_cpu():
 
 func restart():
 	RenderingServer.call_on_render_thread(initialize_compute_code.bind(grid_size_n))
+
+func toggle_is_updating():
+	view_gpu_texture_shader.toggle_is_updating()
 
 ###############################################################################
 # rendering thread.
@@ -151,7 +154,8 @@ var ignition_changed:bool = false
 var grid_size_n_prev: int = -1
 
 func initialize_compute_code(grid_size: int) -> void:
-	free_previous_resources() 
+	if rd:
+		free_previous_resources() 
 	
 	grid_size_n_prev = grid_size
 
@@ -273,6 +277,8 @@ func initialize_compute_code(grid_size: int) -> void:
 
 
 func free_previous_resources():
+	view_gpu_texture_shader.material.set_shader_parameter("p_texture", null)	
+	view_gpu_texture_shader.material.shader = null
 
 	if consts_buffer:
 		rd.free_rid(consts_buffer)
@@ -313,19 +319,19 @@ func free_previous_resources():
 	if sampler_nearest:
 		rd.free_rid(sampler_nearest)
 	
+	uniform_sets.clear()
+	
 	for key in shaders.keys():
-		rd.free_rid(shaders[key])
+		if shaders[key].is_valid():
+			rd.free_rid(shaders[key])
 	shaders.clear()
-	
-	#for key in texture_shaders.keys():
-		#rd.free_rid(texture_shaders[key])
-	texture_shaders.clear()
-	
+
 	#for key in pipelines.keys():
-		#if pipelines[key] and RenderingServer.has_rid(pipelines[key]):
+		#if pipelines[key].is_valid():
 			#rd.free_rid(pipelines[key])
 	pipelines.clear()
-	uniform_sets.clear()
+
+	texture_shaders.clear()
 
 func render_thread_update(delta: float, cur_grid_size_n: int) -> void:
 	if cur_grid_size_n != grid_size_n_prev:
@@ -672,18 +678,22 @@ func view_div():
 
 func view_p():
 	var shader_name = "view_p"
-	var uniform_set = get_uniform_set([
-		shader_name,
-		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest, p_texture_rid], 4, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		view_gpu_texture_shader.view_texture, 20, RenderingDevice.UNIFORM_TYPE_IMAGE])
+	view_gpu_texture_shader.material.set_shader_parameter("p_texture", p_texture)	
+	view_gpu_texture_shader.material.set_shader_parameter("color_scale", debug_p_color_scale)	
+	view_gpu_texture_shader.material.shader = texture_shaders[shader_name]
 
-	var pc_bytes := PackedFloat32Array([debug_p_color_scale]).to_byte_array()
-	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
+	# var uniform_set = get_uniform_set([
+	# 	shader_name,
+	# 	consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+	# 	[sampler_nearest, p_texture_rid], 4, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+	# 	view_gpu_texture_shader.view_texture, 20, RenderingDevice.UNIFORM_TYPE_IMAGE])
 
-	var compute_list = rd.compute_list_begin()
-	dispatch_view(compute_list, shader_name, uniform_set, pc_bytes)
-	rd.compute_list_end()
+	# var pc_bytes := PackedFloat32Array([debug_p_color_scale]).to_byte_array()
+	# pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
+
+	# var compute_list = rd.compute_list_begin()
+	# dispatch_view(compute_list, shader_name, uniform_set, pc_bytes)
+	# rd.compute_list_end()
 
 func view_uv():
 	var shader_name = "view_uv"

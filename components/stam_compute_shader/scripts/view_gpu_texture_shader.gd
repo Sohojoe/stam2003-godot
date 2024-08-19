@@ -18,6 +18,21 @@ func _ready() -> void:
 func _set_view_texture_size(value):
 	view_texture_size = value
 	_update_texture()
+	
+func toggle_is_updating():
+	if viewport.render_target_update_mode == SubViewport.UPDATE_DISABLED:
+		enable()
+	else:
+		disable()
+		
+func disable():
+	visible = false
+	viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+
+func enable():
+	visible = true
+	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+
 
 func _update_texture() -> void:
 	# Create a new Viewport
