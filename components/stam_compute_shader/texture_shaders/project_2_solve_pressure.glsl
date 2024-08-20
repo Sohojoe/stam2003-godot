@@ -25,28 +25,27 @@ layout(set = 0, binding = 10) uniform sampler2D p_prev;
 
 
 void main() {
+    uint numX = consts.numX;
+    uint numY = consts.numY;
     uint idx = gl_GlobalInvocationID.x;
     uint idy = gl_GlobalInvocationID.y;
     ivec2 cell = ivec2(idx, idy);
 
-    if (texelFetch(s, cell, 0).r == 0.0 || idx == 0 || idx >= consts.numX - 1 || idy == 0 || idy >= consts.numY - 1) {
-        // p_buffer.p[cell] = 0.0;
-        return;
-    }
+    // note: we can skip edge check as we do boundary pass after this.
+    // bool skip = (idx == 0 || idx >= numX - 1 || idy == 0 || idy >= numY - 1) || texelFetch(s, cell, 0).r == 0.0;
+    bool skip = (texelFetch(s, cell, 0).r == 0.0);
 
-    ivec2 cell_l = ivec2(idx-1, idy);
-    ivec2 cell_r = ivec2(idx+1, idy);
-    ivec2 cell_u = ivec2(idx, idy-1);
-    ivec2 cell_d = ivec2(idx, idy+1);
+    float div_value = texelFetch(div, cell, 0).r;
+    float p_l = texelFetch(p_prev, ivec2(idx-1, idy), 0).r;
+    float p_r = texelFetch(p_prev, ivec2(idx+1, idy), 0).r;
+    float p_u = texelFetch(p_prev, ivec2(idx, idy-1), 0).r;
+    float p_d = texelFetch(p_prev, ivec2(idx, idy+1), 0).r;
 
-    float value = (
-        texelFetch(div, cell, 0).r + 
-        texelFetch(p_prev, cell_l, 0).r + 
-        texelFetch(p_prev, cell_r, 0).r + 
-        texelFetch(p_prev, cell_u, 0).r + 
-        texelFetch(p_prev, cell_d, 0).r
-    ) * 0.25;
+    // float value = skip ? 0.0 : (div_value + p_l + p_r + p_u + p_d) * 0.25;
+    float value = (div_value + p_l + p_r + p_u + p_d) * 0.25;
 
+    // if (!skip) {
+    //     imageStore(p, cell, vec4(value));
+    // }
     imageStore(p, cell, vec4(value));
-
 }
