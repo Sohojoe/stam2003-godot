@@ -43,27 +43,22 @@ layout(push_constant, std430) uniform Params {
 void main() {
     uint numX = consts.numX;
     uint numY = consts.numY;
-    // float a = pc.dt * pc.diff * numX * numX;
     float a = pc.dt * 64 * 64 * pc.diff;
 
     uint idx = gl_GlobalInvocationID.x;
     uint idy = gl_GlobalInvocationID.y;
     ivec2 cell = ivec2(idx, idy);
 
-    if (texelFetch(s, cell, 0).r == 0.0 || idx == 0 || idx >= numX - 1 || idy == 0 || idy >= numY - 1) {
-        return;
-    }    
-    ivec2 cell_l = ivec2(idx-1, idy);
-    ivec2 cell_r = ivec2(idx+1, idy);
-    ivec2 cell_u = ivec2(idx, idy-1);
-    ivec2 cell_d = ivec2(idx, idy+1);
+    bool skip = (idx == 0 || idx >= numX - 1 || idy == 0 || idy >= numY - 1) || texelFetch(s, cell, 0).r == 0.0;
 
-    float value = (texelFetch(read_texture, cell, 0).r + a * (
-        texelFetch(read_texture, cell_l, 0).r + 
-        texelFetch(read_texture, cell_r, 0).r + 
-        texelFetch(read_texture, cell_u, 0).r + 
-        texelFetch(read_texture, cell_d, 0).r
-        )) / (1 + 4 * a);
+    float centerValue = texelFetch(read_texture, cell, 0).r;
+    float leftValue = texelFetch(read_texture, ivec2(idx-1, idy), 0).r;
+    float rightValue = texelFetch(read_texture, ivec2(idx+1, idy), 0).r;
+    float upValue = texelFetch(read_texture, ivec2(idx, idy-1), 0).r;
+    float downValue = texelFetch(read_texture, ivec2(idx, idy+1), 0).r;
 
-    imageStore(write_texture, cell, vec4(value));
+    float value = skip ? 0.0 : (centerValue + a * (leftValue + rightValue + upValue + downValue)) / (1 + 4 * a);
+
+    vec4 outputValue = vec4(value);
+    imageStore(write_texture, cell, outputValue);
 }
