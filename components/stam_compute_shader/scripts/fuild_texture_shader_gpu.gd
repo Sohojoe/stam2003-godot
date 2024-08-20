@@ -41,7 +41,7 @@ var shader_file_names = {
 	"project_compute_divergence": "res://components/stam_compute_shader/texture_shaders/project_1_compute_divergence.glsl",
 	"set_bnd_div": "res://components/stam_compute_shader/texture_shaders/set_bnd_div.glsl",
 	"project_solve_pressure": "res://components/stam_compute_shader/texture_shaders/project_2_solve_pressure.glsl",
-	"set_bnd_p": "res://components/stam_compute_shader/texture_shaders/set_bnd_p.glsl",
+	"set_square_bnd_p": "res://components/stam_compute_shader/texture_shaders/set_square_bnd_p.glsl",
 	"project_apply_pressure": "res://components/stam_compute_shader/texture_shaders/project_3_apply_pressure.glsl",
 	"calculate_divergence_centered_grid": "res://components/stam_compute_shader/texture_shaders/calculate_divergence_centered_grid.glsl",
 	"cool_and_lift": "res://components/stam_compute_shader/texture_shaders/cool_and_lift.glsl",
@@ -446,6 +446,13 @@ func dispatch(compute_list, shader_name, uniform_set, pc_bytes=null):
 	if pc_bytes:
 		rd.compute_list_set_push_constant(compute_list, pc_bytes, pc_bytes.size())
 	rd.compute_list_dispatch(compute_list, int(ceil(numX / 16.0)), int(ceil(numY / 16.0)), 1)
+	
+func dispatch_square_bounds(compute_list, shader_name, uniform_set, pc_bytes=null):
+	rd.compute_list_bind_compute_pipeline(compute_list, pipelines[shader_name])
+	rd.compute_list_bind_uniform_set(compute_list, uniform_set, 0)
+	if pc_bytes:
+		rd.compute_list_set_push_constant(compute_list, pc_bytes, pc_bytes.size())
+	rd.compute_list_dispatch(compute_list, int(ceil(numX / 16.0)), 1, 1)
 
 func dispatch_view(compute_list, shader_name, uniform_set, pc_bytes=null):
 	rd.compute_list_bind_compute_pipeline(compute_list, pipelines[shader_name])
@@ -585,12 +592,12 @@ func project_s(num_iters: int):
 				[sampler_nearest, p_texture_prev_rid], 10, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
 		dispatch(compute_list, shader_name_p, uniform_set_p)
 		## Apply boundary conditions to pressure
-		var shader_name_bnd_p = "set_bnd_p"
+		var shader_name_bnd_p = "set_square_bnd_p"
 		var uniform_set_bnd_p = get_uniform_set([
 			shader_name_bnd_p,
 			consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
 			p_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
-		dispatch(compute_list, shader_name_bnd_p, uniform_set_bnd_p)
+		dispatch_square_bounds(compute_list, shader_name_bnd_p, uniform_set_bnd_p)
 
 	# Apply pressure gradient
 	var shader_name_apply_p = "project_apply_pressure"
