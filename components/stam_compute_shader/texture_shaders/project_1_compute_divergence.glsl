@@ -16,8 +16,8 @@ layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
 layout(set = 0, binding = 1) uniform sampler2D u;
 layout(set = 0, binding = 2) uniform sampler2D v;
 layout(set = 0, binding = 3) uniform sampler2D s;
-layout(set = 0, binding = 4, r32f) uniform image2D p;
-layout(set = 0, binding = 5, r32f) uniform image2D div;
+layout(set = 0, binding = 4, r16f) uniform image2D p;
+layout(set = 0, binding = 5, r16f) uniform image2D div;
 
 // layout(push_constant, std430) uniform Params {
 //     int _add_params_here;

@@ -13,7 +13,7 @@ layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
     float h2;
 } consts;
 
-layout(set = 0, binding = 4, r32f) uniform image2D p;
+layout(set = 0, binding = 4, r16f) uniform image2D p;
 
 // --- End Shared Buffer Definition
 

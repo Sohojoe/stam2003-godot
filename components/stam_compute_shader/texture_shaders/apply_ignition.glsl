@@ -14,9 +14,9 @@ layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
     float h2;
 } consts;
 
-layout(set = 0, binding = 1, r32f) uniform image2D u;
-layout(set = 0, binding = 2, r32f) uniform image2D v;
-layout(set = 0, binding = 8, r32f) uniform image2D t;
+layout(set = 0, binding = 1, r16f) uniform image2D u;
+layout(set = 0, binding = 2, r16f) uniform image2D v;
+layout(set = 0, binding = 8, r16f) uniform image2D t;
 layout(set = 0, binding = 11) uniform sampler2D i;
 
 // --- End Shared Buffer Definition

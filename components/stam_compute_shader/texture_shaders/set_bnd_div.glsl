@@ -13,7 +13,7 @@ layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
     float h2;
 } consts;
 
-layout(set = 0, binding = 5, r32f) uniform image2D div;
+layout(set = 0, binding = 5, r16f) uniform image2D div;
 // --- End Shared Buffer Definition
 
 void main() {
