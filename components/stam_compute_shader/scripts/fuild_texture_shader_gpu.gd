@@ -619,19 +619,6 @@ func project_s(num_iters: int):
 		v_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE])
 	dispatch(compute_list, shader_name_bnd_uv, uniform_set_bnd_uv)
 
-	# calculate_divergence_centered_grid
-	var shader_name_calc_div = "calculate_divergence_centered_grid"
-	var uniform_set_calc_div = get_uniform_set([
-		shader_name_calc_div,
-		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest, u_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		[sampler_nearest, v_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		[sampler_nearest, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		div_texture_rid, 5, RenderingDevice.UNIFORM_TYPE_IMAGE])
-	dispatch(compute_list, shader_name_calc_div, uniform_set_calc_div)
-	## Apply boundary conditions to div
-	dispatch(compute_list, shader_name_bnd_div, uniform_set_bnd_div)
-
 	rd.compute_list_end()
 
 
@@ -679,6 +666,25 @@ func view_t():
 	view_gpu_texture_shader.material.shader = texture_shaders[shader_name]
 
 func view_div():
+	var compute_list = rd.compute_list_begin()
+	var shader_name_calc_div = "calculate_divergence_centered_grid"
+	var uniform_set_calc_div = get_uniform_set([
+		shader_name_calc_div,
+		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+		[sampler_nearest, u_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest, v_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		div_texture_rid, 5, RenderingDevice.UNIFORM_TYPE_IMAGE])
+	dispatch(compute_list, shader_name_calc_div, uniform_set_calc_div)
+	## Apply boundary conditions to div
+	var shader_name_bnd_div = "set_bnd_div"
+	var uniform_set_bnd_div = get_uniform_set([
+		shader_name_bnd_div,
+		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+		div_texture_rid, 5, RenderingDevice.UNIFORM_TYPE_IMAGE])
+	dispatch(compute_list, shader_name_bnd_div, uniform_set_bnd_div)
+	rd.compute_list_end()
+
 	var shader_name = "view_div"
 	view_gpu_texture_shader.material.set_shader_parameter("div_texture", div_texture)	
 	view_gpu_texture_shader.material.set_shader_parameter("color_scale", debug_div_color_scale)	
