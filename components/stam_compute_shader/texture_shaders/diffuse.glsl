@@ -34,6 +34,7 @@ layout(push_constant, std430) uniform Params {
 // for ( i=1 ; i<=N ; i++ ) {
 // for ( j=1 ; j<=N ; j++ ) {
 // x[IX(i,j)] = (x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+
+//    x[IX(i,j-1)]+x[IX(i,j+1)]))/(1+4*a);
 // } }
 //        set_bnd ( N, b, x );
 //     }
