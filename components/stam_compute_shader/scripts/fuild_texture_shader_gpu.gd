@@ -5,7 +5,7 @@ extends Node2D
 # ---- global illimination values
 @export var skip_gi_rendering: bool = false
 @export_range(0, 3, .1) var di_debug_view: int = 0
-@export_range(0.0, 1.0) var debug_div_color_scale: float = 0.004
+@export_range(0.0, 1.0) var debug_div_color_scale: float = 0.0002
 @export_range(0.0, 0.010) var debug_p_color_scale: float = 0.0003
 @export_range(0.0, 0.30) var debug_uv_color_scale: float = 0.07
 # ---- config
@@ -682,7 +682,7 @@ func view_t():
 
 func view_div():
 	var compute_list = rd.compute_list_begin()
-	var shader_name_calc_div = "calculate_divergence_centered_grid"
+	var shader_name_calc_div = "project_compute_divergence"
 	var uniform_set_calc_div = get_uniform_set([
 		shader_name_calc_div,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
