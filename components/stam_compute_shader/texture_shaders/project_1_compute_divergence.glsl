@@ -37,6 +37,7 @@ void main() {
     // if (texelFetch(s, cell, 0).r == 0.0 || idx == 0 || idx >= consts.numX - 1 || idy == 0 || idy >= consts.numY - 1) {
     //     return;
     // }
+    bool skip = (texelFetch(s, cell, 0).r == 0.0);
 
     ivec2 cell_l = ivec2(idx-1, idy);
     ivec2 cell_r = ivec2(idx+1, idy);
@@ -50,6 +51,8 @@ void main() {
         texelFetch(u, cell_l, 0).r + 
         texelFetch(v, cell_d, 0).r - 
         texelFetch(v, cell_u, 0).r);
+
+    value = skip ? 0 : value;
 
     imageStore(div, cell, vec4(value));
 }
