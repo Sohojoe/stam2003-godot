@@ -39,7 +39,7 @@ void main() {
     uint idy = gl_GlobalInvocationID.y;
     uint N = consts.numX -1;
 
-    if (idx >= N || idy >= N) return;
+    // if (idx >= N || idy >= N) return;
 
     float dt = pc.dt;
 	float fire_cooling = 1.2 * dt;

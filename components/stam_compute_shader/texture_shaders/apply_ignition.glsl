@@ -30,7 +30,7 @@ void main() {
     uint idy = gl_GlobalInvocationID.y;
     uint N = consts.numX -1;
 
-    if (idx >= N || idy >= N) return;
+    // if (idx >= N || idy >= N) return;
     ivec2 cell = ivec2(idx, idy);
 
     // todo: add check for if cell if free or not
