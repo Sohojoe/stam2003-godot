@@ -34,9 +34,9 @@ void main() {
     // p_buffer_prev.p[cell] = 0.0;
 
     // compute divergence
-    if (texelFetch(s, cell, 0).r == 0.0 || idx == 0 || idx >= consts.numX - 1 || idy == 0 || idy >= consts.numY - 1) {
-        return;
-    }
+    // if (texelFetch(s, cell, 0).r == 0.0 || idx == 0 || idx >= consts.numX - 1 || idy == 0 || idy >= consts.numY - 1) {
+    //     return;
+    // }
 
     ivec2 cell_l = ivec2(idx-1, idy);
     ivec2 cell_r = ivec2(idx+1, idy);
