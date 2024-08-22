@@ -33,8 +33,6 @@ void main() {
     uint idy = gl_GlobalInvocationID.y;
     uint N = consts.numX -1;
 
-    if (idx >= N || idy >= N) return;
-
     // float dt0 = pc.dt * N;
     float dt0 = pc.dt * 64; // was N but we want constant scale at different grid sizes
     uint i = idx;
@@ -44,13 +42,11 @@ void main() {
     float x = i - dt0 * texelFetch(u, cell, 0).r;
     float y = j - dt0 * texelFetch(v, cell, 0).r;
 
-    if (x < 0.5) x = 0.5;
-    if (x > N + 0.5) x = N + 0.5;
+    x = clamp(x, 0.5, N + 0.5);
     int i0 = int(x);
     int i1 = i0 + 1;
 
-    if (y < 0.5) y = 0.5;
-    if (y > N + 0.5) y = N + 0.5;
+    y = clamp(y, 0.5, N + 0.5);
     int j0 = int(y);
     int j1 = j0 + 1;
 
