@@ -33,7 +33,7 @@ void main() {
 
     // note: we can skip edge check as we do boundary pass after this.
     // bool skip = (idx == 0 || idx >= numX - 1 || idy == 0 || idy >= numY - 1) || texelFetch(s, cell, 0).r == 0.0;
-    bool skip = (texelFetch(s, cell, 0).r == 0.0);
+    // bool skip = (texelFetch(s, cell, 0).r == 0.0);
 
     float div_value = texelFetch(div, cell, 0).r;
     float p_l = texelFetch(p_prev, ivec2(idx-1, idy), 0).r;
