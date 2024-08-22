@@ -37,7 +37,7 @@ var shader_file_names = {
 	"apply_force": "res://components/stam_compute_shader/texture_shaders/apply_force.glsl",
 	"diffuse": "res://components/stam_compute_shader/texture_shaders/diffuse.glsl",
 	"advect": "res://components/stam_compute_shader/texture_shaders/advect.glsl",
-	"set_bnd_uv_open": "res://components/stam_compute_shader/texture_shaders/set_bnd_uv_open.glsl",
+	"set_square_bnd_uv_open": "res://components/stam_compute_shader/texture_shaders/set_square_bnd_uv_open.glsl",
 	"project_compute_divergence": "res://components/stam_compute_shader/texture_shaders/project_1_compute_divergence.glsl",
 	"set_bnd_div": "res://components/stam_compute_shader/texture_shaders/set_bnd_div.glsl",
 	"project_solve_pressure": "res://components/stam_compute_shader/texture_shaders/project_2_solve_pressure.glsl",
@@ -501,13 +501,13 @@ func cool_and_lift(dt: float):
 	dispatch(compute_list, shader_name, uniform_set, pc_bytes)
 
 	# Apply boundary conditions to u and v
-	var shader_name_bnd_uv = "set_bnd_uv_open"
+	var shader_name_bnd_uv = "set_square_bnd_uv_open"
 	var uniform_set_bnd_uv = get_uniform_set([
 		shader_name_bnd_uv,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
 		u_texture_rid, 1, RenderingDevice.UNIFORM_TYPE_IMAGE,
 		v_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE])
-	dispatch(compute_list, shader_name_bnd_uv, uniform_set_bnd_uv)
+	dispatch_square_bounds(compute_list, shader_name_bnd_uv, uniform_set_bnd_uv)
 	rd.compute_list_end()
 
 func apply_ignition():
@@ -611,13 +611,13 @@ func project_s(num_iters: int):
 	dispatch(compute_list, shader_name_apply_p, uniform_set_apply_p)
 
 	# Apply boundary conditions to u and v
-	var shader_name_bnd_uv = "set_bnd_uv_open"
+	var shader_name_bnd_uv = "set_square_bnd_uv_open"
 	var uniform_set_bnd_uv = get_uniform_set([
 		shader_name_bnd_uv,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
 		u_texture_rid, 1, RenderingDevice.UNIFORM_TYPE_IMAGE,
 		v_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE])
-	dispatch(compute_list, shader_name_bnd_uv, uniform_set_bnd_uv)
+	dispatch_square_bounds(compute_list, shader_name_bnd_uv, uniform_set_bnd_uv)
 
 	rd.compute_list_end()
 
@@ -642,15 +642,30 @@ func advect(read_texture:RID, write_texture:RID, dt: float):
 
 
 func stam_advect_temperature(dt: float):
-
 	swap_t_buffer()
 	advect(t_texture_prev_rid, t_texture_rid, dt)
+	var shader_name_bnd_p = "set_square_bnd_p"
+	var uniform_set_bnd_p = get_uniform_set([
+		shader_name_bnd_p,
+		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+		p_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
+	var compute_list = rd.compute_list_begin()
+	dispatch_square_bounds(compute_list, shader_name_bnd_p, uniform_set_bnd_p)
+	rd.compute_list_end()
 
 func stam_advect_vel(dt: float):
-
 	swap_uv_buffers()
 	advect(u_texture_prev_rid, u_texture_rid, dt)
 	advect(v_texture_prev_rid, v_texture_rid, dt)
+	var shader_name_bnd_uv = "set_square_bnd_uv_open"
+	var uniform_set_bnd_uv = get_uniform_set([
+		shader_name_bnd_uv,
+		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+		u_texture_rid, 1, RenderingDevice.UNIFORM_TYPE_IMAGE,
+		v_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE])
+	var compute_list = rd.compute_list_begin()
+	dispatch_square_bounds(compute_list, shader_name_bnd_uv, uniform_set_bnd_uv)
+	rd.compute_list_end()
 
 func handle_ignition_gpu():
 	if (ignition_changed):
