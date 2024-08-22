@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://bq8wtnayhyajb"
+path="res://.godot/imported/set_square_bnd_div.glsl-c7309ff206721e5a19171807f6f28914.res"
+
+[deps]
+
+source_file="res://components/stam_compute_shader/texture_shaders/set_square_bnd_div.glsl"
+dest_files=["res://.godot/imported/set_square_bnd_div.glsl-c7309ff206721e5a19171807f6f28914.res"]
+
+[params]
+

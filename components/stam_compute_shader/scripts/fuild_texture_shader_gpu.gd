@@ -39,7 +39,7 @@ var shader_file_names = {
 	"advect": "res://components/stam_compute_shader/texture_shaders/advect.glsl",
 	"set_square_bnd_uv_open": "res://components/stam_compute_shader/texture_shaders/set_square_bnd_uv_open.glsl",
 	"project_compute_divergence": "res://components/stam_compute_shader/texture_shaders/project_1_compute_divergence.glsl",
-	"set_bnd_div": "res://components/stam_compute_shader/texture_shaders/set_bnd_div.glsl",
+	"set_square_bnd_div": "res://components/stam_compute_shader/texture_shaders/set_square_bnd_div.glsl",
 	"project_solve_pressure": "res://components/stam_compute_shader/texture_shaders/project_2_solve_pressure.glsl",
 	"set_square_bnd_p": "res://components/stam_compute_shader/texture_shaders/set_square_bnd_p.glsl",
 	"project_apply_pressure": "res://components/stam_compute_shader/texture_shaders/project_3_apply_pressure.glsl",
@@ -276,6 +276,10 @@ func initialize_compute_code(grid_size: int) -> void:
 	var ss = RDSamplerState.new()
 	# ss.mag_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
 	# ss.min_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
+	ss.repeat_u = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_BORDER
+	ss.repeat_v = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_BORDER
+	ss.repeat_w = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_BORDER
+	ss.border_color = RenderingDevice.SAMPLER_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK
 	sampler_nearest = rd.sampler_create(ss)
 
 	for key in texture_shader_file_names.keys():
@@ -572,12 +576,12 @@ func project_s(num_iters: int):
 		div_texture_rid, 5, RenderingDevice.UNIFORM_TYPE_IMAGE])
 	dispatch(compute_list, shader_name_div, uniform_set_div)
 	## Apply boundary conditions to div
-	var shader_name_bnd_div = "set_bnd_div"
+	var shader_name_bnd_div = "set_square_bnd_div"
 	var uniform_set_bnd_div = get_uniform_set([
 		shader_name_bnd_div,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
 		div_texture_rid, 5, RenderingDevice.UNIFORM_TYPE_IMAGE])
-	dispatch(compute_list, shader_name_bnd_div, uniform_set_bnd_div)
+	dispatch_square_bounds(compute_list, shader_name_bnd_div, uniform_set_bnd_div)
 
 	# Solve pressure iterations
 	for k in range(num_iters):
@@ -682,22 +686,23 @@ func view_t():
 
 func view_div():
 	var compute_list = rd.compute_list_begin()
-	var shader_name_calc_div = "project_compute_divergence"
-	var uniform_set_calc_div = get_uniform_set([
-		shader_name_calc_div,
+	var shader_name_div = "project_compute_divergence"
+	var uniform_set_div = get_uniform_set([
+		shader_name_div,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
 		[sampler_nearest, u_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 		[sampler_nearest, v_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 		[sampler_nearest, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		p_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
 		div_texture_rid, 5, RenderingDevice.UNIFORM_TYPE_IMAGE])
-	dispatch(compute_list, shader_name_calc_div, uniform_set_calc_div)
+	dispatch(compute_list, shader_name_div, uniform_set_div)
 	## Apply boundary conditions to div
-	var shader_name_bnd_div = "set_bnd_div"
+	var shader_name_bnd_div = "set_square_bnd_div"
 	var uniform_set_bnd_div = get_uniform_set([
 		shader_name_bnd_div,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
 		div_texture_rid, 5, RenderingDevice.UNIFORM_TYPE_IMAGE])
-	dispatch(compute_list, shader_name_bnd_div, uniform_set_bnd_div)
+	dispatch_square_bounds(compute_list, shader_name_bnd_div, uniform_set_bnd_div)
 	rd.compute_list_end()
 
 	var shader_name = "view_div"
