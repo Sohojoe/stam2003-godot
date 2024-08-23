@@ -559,11 +559,11 @@ func diffuse_uv(dt:float, num_iters:int):
 	swap_uv_buffers()
 	diffuse(u_texture_prev_rid, u_texture_rid, dt, diffuse_visc_value, num_iters)
 	var compute_list_u = rd.compute_list_begin()
-	#set_square_bnd_uv_open(compute_list_u)
+	set_square_bnd_uv_open(compute_list_u)
 	rd.compute_list_end()
 	diffuse(v_texture_prev_rid, v_texture_rid, dt, diffuse_visc_value, num_iters)
 	var compute_list = rd.compute_list_begin()
-	#set_square_bnd_uv_open(compute_list)
+	set_square_bnd_uv_open(compute_list)
 	rd.compute_list_end()
 
 
