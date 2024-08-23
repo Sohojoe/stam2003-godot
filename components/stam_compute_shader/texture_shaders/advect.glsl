@@ -26,27 +26,25 @@ layout(push_constant, std430) uniform Params {
 } pc;
 
 
-
 void main() {
-
-    uint idx = gl_GlobalInvocationID.x;
-    uint idy = gl_GlobalInvocationID.y;
-    uint N = consts.numX -1;
+    uint numX = consts.numX;
+    uint numY = consts.numY;
+    ivec2 cell = ivec2(gl_GlobalInvocationID.xy);
+    vec2 texelSize = 1.0 / vec2(numX, numY);
+    vec2 UV = (vec2(cell) + 0.5) * texelSize;
+    // uint N = consts.numX -1;
 
     // float dt0 = pc.dt * N;
     float dt0 = pc.dt * 64; // was N but we want constant scale at different grid sizes
-    uint i = idx;
-    uint j = idy;
-    ivec2 cell = ivec2(idx, idy);
 
-    float x = i - dt0 * texelFetch(u, cell, 0).r;
-    float y = j - dt0 * texelFetch(v, cell, 0).r;
+    float x = cell.x - dt0 * texture(u, UV).r;
+    float y = cell.y - dt0 * texture(v, UV).r;
 
-    x = clamp(x, 0.5, N + 0.5);
+    // x = clamp(x, 0.5, N + 0.5);
     int i0 = int(x);
     int i1 = i0 + 1;
 
-    y = clamp(y, 0.5, N + 0.5);
+    // y = clamp(y, 0.5, N + 0.5);
     int j0 = int(y);
     int j1 = j0 + 1;
 
@@ -55,10 +53,10 @@ void main() {
     float t1 = y - float(j0);
     float t0 = 1.0 - t1;
 
-    float value = s0 * (t0 * texelFetch(read_texture, ivec2(i0, j0), 0).r + 
-                        t1 * texelFetch(read_texture, ivec2(i0, j1), 0).r) +
-                  s1 * (t0 * texelFetch(read_texture, ivec2(i1, j0), 0).r + 
-                        t1 * texelFetch(read_texture, ivec2(i1, j1), 0).r);
+    float value = s0 * (t0 * texture(read_texture, vec2(i0, j0) * texelSize).r + 
+                        t1 * texture(read_texture, vec2(i0, j1) * texelSize).r) +
+                  s1 * (t0 * texture(read_texture, vec2(i1, j0) * texelSize).r + 
+                        t1 * texture(read_texture, vec2(i1, j1) * texelSize).r);
 
     imageStore(write_texture, cell, vec4(value));
 

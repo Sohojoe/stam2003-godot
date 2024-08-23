@@ -23,34 +23,35 @@ layout(set = 0, binding = 5, r16f) uniform image2D div;
 //     int _add_params_here;
 // } pc;
 
+const vec2 up = vec2(0.0, -1.0);
+const vec2 down = vec2(0.0, 1.0);
+const vec2 left = vec2(-1.0, 0.0);
+const vec2 right = vec2(1.0, 0.0);
 
 void main() {
-    uint idx = gl_GlobalInvocationID.x;
-    uint idy = gl_GlobalInvocationID.y;
-    ivec2 cell = ivec2(idx, idy);
+    uint numX = consts.numX;
+    uint numY = consts.numY;
+    ivec2 cell = ivec2(gl_GlobalInvocationID.xy);
+    vec2 texelSize = 1.0 / vec2(numX, numY);
+    vec2 UV = (vec2(cell) + 0.5) * texelSize;
 
     // set p to 0.
     imageStore(p, cell, vec4(0.0));
-    // p_buffer_prev.p[cell] = 0.0;
 
-    // compute divergence
-    // if (texelFetch(s, cell, 0).r == 0.0 || idx == 0 || idx >= consts.numX - 1 || idy == 0 || idy >= consts.numY - 1) {
-    //     return;
-    // }
     bool skip = (texelFetch(s, cell, 0).r == 0.0);
 
-    ivec2 cell_l = ivec2(idx-1, idy);
-    ivec2 cell_r = ivec2(idx+1, idy);
-    ivec2 cell_u = ivec2(idx, idy-1);
-    ivec2 cell_d = ivec2(idx, idy+1);
+    vec2 cell_l = UV + left * texelSize;
+    vec2 cell_r = UV + right * texelSize;
+    vec2 cell_u = UV + up * texelSize;
+    vec2 cell_d = UV + down * texelSize;
 
     // float _h = 1.0 / max(consts.numX, consts.numY);
-    float _h = 1.0 / 64;
+    const float _h = 1.0 / 64;
     float value = -0.5 * _h * (
-        texelFetch(u, cell_r, 0).r -
-        texelFetch(u, cell_l, 0).r + 
-        texelFetch(v, cell_d, 0).r - 
-        texelFetch(v, cell_u, 0).r);
+        texture(u, UV + right * texelSize).r -
+        texture(u, UV + left * texelSize).r + 
+        texture(v, UV + down * texelSize).r - 
+        texture(v, UV + up * texelSize).r);
 
     value = skip ? 0 : value;
 

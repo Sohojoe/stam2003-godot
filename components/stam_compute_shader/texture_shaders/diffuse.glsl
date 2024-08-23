@@ -40,22 +40,27 @@ layout(push_constant, std430) uniform Params {
 //     }
 // }
 
+const vec2 up = vec2(0.0, -1.0);
+const vec2 down = vec2(0.0, 1.0);
+const vec2 left = vec2(-1.0, 0.0);
+const vec2 right = vec2(1.0, 0.0);
+
 void main() {
     uint numX = consts.numX;
     uint numY = consts.numY;
+    ivec2 cell = ivec2(gl_GlobalInvocationID.xy);
+    vec2 texelSize = 1.0 / vec2(numX, numY);
+    vec2 UV = (vec2(cell) + 0.5) * texelSize;
     float a = pc.dt * 64 * 64 * pc.diff;
 
-    uint idx = gl_GlobalInvocationID.x;
-    uint idy = gl_GlobalInvocationID.y;
-    ivec2 cell = ivec2(idx, idy);
 
-    bool skip = (idx == 0 || idx >= numX - 1 || idy == 0 || idy >= numY - 1) || texelFetch(s, cell, 0).r == 0.0;
+    bool skip = texelFetch(s, cell, 0).r == 0.0;
 
-    float centerValue = texelFetch(read_texture, cell, 0).r;
-    float leftValue = texelFetch(read_texture, ivec2(idx-1, idy), 0).r;
-    float rightValue = texelFetch(read_texture, ivec2(idx+1, idy), 0).r;
-    float upValue = texelFetch(read_texture, ivec2(idx, idy-1), 0).r;
-    float downValue = texelFetch(read_texture, ivec2(idx, idy+1), 0).r;
+    float centerValue = texture(read_texture, UV).r;
+    float leftValue = texture(read_texture, UV + left * texelSize).r;
+    float rightValue = texture(read_texture, UV + right * texelSize).r;
+    float upValue = texture(read_texture, UV + up * texelSize).r;
+    float downValue = texture(read_texture, UV + down * texelSize).r;    
 
     float value = skip ? 0.0 : (centerValue + a * (leftValue + rightValue + upValue + downValue)) / (1 + 4 * a);
 

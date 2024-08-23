@@ -23,23 +23,27 @@ layout(set = 0, binding = 10) uniform sampler2D p_prev;
 //     int _add_params_here;
 // } pc;
 
+const vec2 up = vec2(0.0, -1.0);
+const vec2 down = vec2(0.0, 1.0);
+const vec2 left = vec2(-1.0, 0.0);
+const vec2 right = vec2(1.0, 0.0);
 
 void main() {
     uint numX = consts.numX;
     uint numY = consts.numY;
-    uint idx = gl_GlobalInvocationID.x;
-    uint idy = gl_GlobalInvocationID.y;
-    ivec2 cell = ivec2(idx, idy);
+    ivec2 cell = ivec2(gl_GlobalInvocationID.xy);
+    vec2 texelSize = 1.0 / vec2(numX, numY);
+    vec2 UV = (vec2(cell) + 0.5) * texelSize;
 
     // note: we can skip edge check as we do boundary pass after this.
     // bool skip = (idx == 0 || idx >= numX - 1 || idy == 0 || idy >= numY - 1) || texelFetch(s, cell, 0).r == 0.0;
     // bool skip = (texelFetch(s, cell, 0).r == 0.0);
 
     float div_value = texelFetch(div, cell, 0).r;
-    float p_l = texelFetch(p_prev, ivec2(idx-1, idy), 0).r;
-    float p_r = texelFetch(p_prev, ivec2(idx+1, idy), 0).r;
-    float p_u = texelFetch(p_prev, ivec2(idx, idy-1), 0).r;
-    float p_d = texelFetch(p_prev, ivec2(idx, idy+1), 0).r;
+    float p_l = texture(p_prev, UV + left * texelSize).r;
+    float p_r = texture(p_prev, UV + right * texelSize).r;
+    float p_u = texture(p_prev, UV + up * texelSize).r;
+    float p_d = texture(p_prev, UV + down * texelSize).r;
 
     // float value = skip ? 0.0 : (div_value + p_l + p_r + p_u + p_d) * 0.25;
     float value = (div_value + p_l + p_r + p_u + p_d) * 0.25;

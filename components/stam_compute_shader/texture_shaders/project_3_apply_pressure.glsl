@@ -23,21 +23,27 @@ layout(set = 0, binding = 4) uniform sampler2D p;
 //     int _add_params_here;
 // } pc;
 
+const vec2 up = vec2(0.0, -1.0);
+const vec2 down = vec2(0.0, 1.0);
+const vec2 left = vec2(-1.0, 0.0);
+const vec2 right = vec2(1.0, 0.0);
 
 void main() {
-    uint idx = gl_GlobalInvocationID.x;
-    uint idy = gl_GlobalInvocationID.y;
-    ivec2 cell = ivec2(idx, idy);
+    uint numX = consts.numX;
+    uint numY = consts.numY;
+    ivec2 cell = ivec2(gl_GlobalInvocationID.xy);
+    vec2 texelSize = 1.0 / vec2(numX, numY);
+    vec2 UV = (vec2(cell) + 0.5) * texelSize;
 
     // if (texelFetch(s, cell, 0).r == 0.0 || idx == 0 || idx >= consts.numX - 1 || idy == 0 || idy >= consts.numY - 1) {
     //     return;
     // }
     bool skip = (texelFetch(s, cell, 0).r == 0.0);
 
-    ivec2 cell_l = ivec2(idx-1, idy);
-    ivec2 cell_r = ivec2(idx+1, idy);
-    ivec2 cell_u = ivec2(idx, idy-1);
-    ivec2 cell_d = ivec2(idx, idy+1);
+    vec2 cell_l = UV + left * texelSize;
+    vec2 cell_r = UV + right * texelSize;
+    vec2 cell_u = UV + up * texelSize;
+    vec2 cell_d = UV + down * texelSize;
 
     // float _h = 1.0 / max(consts.numX, consts.numY);
     float _h = 1.0 / 64;
@@ -45,8 +51,8 @@ void main() {
     float u_val = imageLoad(u, cell).r;
     float v_val = imageLoad(v, cell).r;
 
-    u_val -= 0.5 * (texelFetch(p, cell_r, 0).r - texelFetch(p, cell_l, 0).r) / _h;
-    v_val -= 0.5 * (texelFetch(p, cell_d, 0).r - texelFetch(p, cell_u, 0).r) / _h;
+    u_val -= 0.5 * (texture(p, cell_r).r - texture(p, cell_l).r) / _h;
+    v_val -= 0.5 * (texture(p, cell_d).r - texture(p, cell_u).r) / _h;
 
     u_val = skip ? 0 : u_val;
     v_val = skip ? 0 : v_val;

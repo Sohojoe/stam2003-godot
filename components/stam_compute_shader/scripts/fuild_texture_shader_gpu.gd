@@ -34,25 +34,21 @@ var c_scale = 1.0
 var camera: Camera2D = null
 
 var shader_file_names = {
-	"apply_force": "res://components/stam_compute_shader/texture_shaders/apply_force.glsl",
+	# "apply_force": "res://components/stam_compute_shader/texture_shaders/apply_force.glsl",
 	"diffuse": "res://components/stam_compute_shader/texture_shaders/diffuse.glsl",
 	"advect": "res://components/stam_compute_shader/texture_shaders/advect.glsl",
-	"set_square_bnd_uv_open": "res://components/stam_compute_shader/texture_shaders/set_square_bnd_uv_open.glsl",
 	"project_compute_divergence": "res://components/stam_compute_shader/texture_shaders/project_1_compute_divergence.glsl",
-	"set_square_bnd_div": "res://components/stam_compute_shader/texture_shaders/set_square_bnd_div.glsl",
 	"project_solve_pressure": "res://components/stam_compute_shader/texture_shaders/project_2_solve_pressure.glsl",
-	"set_square_bnd_p": "res://components/stam_compute_shader/texture_shaders/set_square_bnd_p.glsl",
 	"project_apply_pressure": "res://components/stam_compute_shader/texture_shaders/project_3_apply_pressure.glsl",
-	"calculate_divergence_centered_grid": "res://components/stam_compute_shader/texture_shaders/calculate_divergence_centered_grid.glsl",
 	"cool_and_lift": "res://components/stam_compute_shader/texture_shaders/cool_and_lift.glsl",
 	"apply_ignition": "res://components/stam_compute_shader/texture_shaders/apply_ignition.glsl",
-	"view_t": "res://components/stam_compute_shader/texture_shaders/view_t.glsl",
-	"view_div": "res://components/stam_compute_shader/texture_shaders/view_div.glsl",
-	"view_p": "res://components/stam_compute_shader/texture_shaders/view_p.glsl",
-	"view_uv": "res://components/stam_compute_shader/texture_shaders/view_uv.glsl",
+	"set_square_bnd_uv_open": "res://components/stam_compute_shader/texture_shaders/set_square_bnd_uv_open.glsl",
+	#"view_t": "res://components/stam_compute_shader/texture_shaders/view_t.glsl",
+	#"view_div": "res://components/stam_compute_shader/texture_shaders/view_div.glsl",
+	#"view_p": "res://components/stam_compute_shader/texture_shaders/view_p.glsl",
+	#"view_uv": "res://components/stam_compute_shader/texture_shaders/view_uv.glsl",
 }
 var texture_shader_file_names = {
-	"apply_ignition": "res://components/stam_compute_shader/texture_shaders/apply_ignition.gdshader",
 	"view_t": "res://components/stam_compute_shader/texture_shaders/view_t.gdshader",
 	"view_p": "res://components/stam_compute_shader/texture_shaders/view_p.gdshader",
 	"view_div": "res://components/stam_compute_shader/texture_shaders/view_div.gdshader",
@@ -149,7 +145,8 @@ var div_texture:Texture2DRD
 var div_texture_rid:RID
 var i_texture:Texture2DRD
 var i_texture_rid:RID
-var sampler_nearest:RID
+var sampler_nearest_0:RID
+var sampler_nearest_clamp:RID
 
 
 var ignition_changed:bool = false
@@ -274,13 +271,22 @@ func initialize_compute_code(grid_size: int) -> void:
 	rd.texture_update(s_texture_rid, 0, i_bytes)
 
 	var ss = RDSamplerState.new()
-	# ss.mag_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
-	# ss.min_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
 	ss.repeat_u = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_BORDER
 	ss.repeat_v = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_BORDER
 	ss.repeat_w = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_BORDER
 	ss.border_color = RenderingDevice.SAMPLER_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK
-	sampler_nearest = rd.sampler_create(ss)
+	sampler_nearest_0 = rd.sampler_create(ss)
+	var ss2 = RDSamplerState.new()
+	#ss2.mag_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
+	#ss2.min_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
+	ss2.repeat_u = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_EDGE
+	ss2.repeat_v = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_EDGE
+	ss2.repeat_w = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_EDGE
+	#ss2.repeat_u = RenderingDevice.SAMPLER_REPEAT_MODE_MIRRORED_REPEAT
+	#ss2.repeat_v = RenderingDevice.SAMPLER_REPEAT_MODE_MIRRORED_REPEAT
+	#ss2.repeat_w = RenderingDevice.SAMPLER_REPEAT_MODE_MIRRORED_REPEAT
+	sampler_nearest_clamp = rd.sampler_create(ss2)
+
 
 	for key in texture_shader_file_names.keys():
 		var file_name:String = texture_shader_file_names[key]
@@ -331,8 +337,10 @@ func free_previous_resources():
 	if i_texture:
 		rd.free_rid(i_texture_rid)
 		i_texture = null
-	if sampler_nearest:
-		rd.free_rid(sampler_nearest)
+	if sampler_nearest_0:
+		rd.free_rid(sampler_nearest_0)
+	if sampler_nearest_clamp:
+		rd.free_rid(sampler_nearest_clamp)
 	
 	uniform_sets.clear()
 	
@@ -467,24 +475,32 @@ func dispatch_view(compute_list, shader_name, uniform_set, pc_bytes=null):
 	var ysteps = int(ceil(view_gpu_texture_shader.view_texture_size / 16.0))
 	rd.compute_list_dispatch(compute_list, xsteps, ysteps, 1)
 
-#---- core functions
-func integrate_s(dt: float, wind_force: Vector2):
-	var shader_name = "apply_force"
-	var uniform_set = get_uniform_set([
-		shader_name,
+func set_square_bnd_uv_open(compute_list):
+	var shader_name_bnd_uv = "set_square_bnd_uv_open"
+	var uniform_set_bnd_uv = get_uniform_set([
+		shader_name_bnd_uv,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
 		u_texture_rid, 1, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		v_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		[sampler_nearest, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
+		v_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE])
+	dispatch_square_bounds(compute_list, shader_name_bnd_uv, uniform_set_bnd_uv)
 
-	# Prepare push constants
-	var pc_data := PackedFloat32Array([wind_force.x * dt, wind_force.y * dt])
-	var pc_bytes = pc_data.to_byte_array()
-	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
+#---- core functions
+# func integrate_s(dt: float, wind_force: Vector2):
+# 	var shader_name = "apply_force"
+# 	var uniform_set = get_uniform_set([
+# 		shader_name,
+# 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+# 		u_texture_rid, 1, RenderingDevice.UNIFORM_TYPE_IMAGE,
+# 		v_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE,
+# 		[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
+# 	# Prepare push constants
+# 	var pc_data := PackedFloat32Array([wind_force.x * dt, wind_force.y * dt])
+# 	var pc_bytes = pc_data.to_byte_array()
+# 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
 		
-	var compute_list = rd.compute_list_begin()
-	dispatch(compute_list, shader_name, uniform_set, pc_bytes)
-	rd.compute_list_end()
+# 	var compute_list = rd.compute_list_begin()
+# 	dispatch(compute_list, shader_name, uniform_set, pc_bytes)
+# 	rd.compute_list_end()
 
 func cool_and_lift(dt: float):
 	var shader_name = "cool_and_lift"
@@ -503,15 +519,7 @@ func cool_and_lift(dt: float):
 		
 	var compute_list = rd.compute_list_begin()
 	dispatch(compute_list, shader_name, uniform_set, pc_bytes)
-
-	# Apply boundary conditions to u and v
-	var shader_name_bnd_uv = "set_square_bnd_uv_open"
-	var uniform_set_bnd_uv = get_uniform_set([
-		shader_name_bnd_uv,
-		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		u_texture_rid, 1, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		v_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE])
-	dispatch_square_bounds(compute_list, shader_name_bnd_uv, uniform_set_bnd_uv)
+	#set_square_bnd_uv_open(compute_list)
 	rd.compute_list_end()
 
 func apply_ignition():
@@ -522,7 +530,7 @@ func apply_ignition():
 		u_texture_rid, 1, RenderingDevice.UNIFORM_TYPE_IMAGE,
 		v_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE,
 		t_texture_rid, 8, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		[sampler_nearest, i_texture_rid], 11, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
+		[sampler_nearest_0, i_texture_rid], 11, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
 		
 	var compute_list = rd.compute_list_begin()
 	dispatch(compute_list, shader_name, uniform_set)
@@ -533,9 +541,9 @@ func diffuse(read_texture, write_texture, dt:float, diff: float, num_iters:int):
 	var uniform_set = get_uniform_set([
 		shader_name,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest, read_texture], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_clamp, read_texture], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 		write_texture, 2, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		[sampler_nearest, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
+		[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
 	var pc_bytes := PackedFloat32Array([dt, diff]).to_byte_array()
 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
 
@@ -548,10 +556,15 @@ func diffuse(read_texture, write_texture, dt:float, diff: float, num_iters:int):
 
 
 func diffuse_uv(dt:float, num_iters:int):
-
 	swap_uv_buffers()
 	diffuse(u_texture_prev_rid, u_texture_rid, dt, diffuse_visc_value, num_iters)
+	var compute_list_u = rd.compute_list_begin()
+	#set_square_bnd_uv_open(compute_list_u)
+	rd.compute_list_end()
 	diffuse(v_texture_prev_rid, v_texture_rid, dt, diffuse_visc_value, num_iters)
+	var compute_list = rd.compute_list_begin()
+	#set_square_bnd_uv_open(compute_list)
+	rd.compute_list_end()
 
 
 func diffuse_t(dt:float, num_iters:int):
@@ -569,19 +582,12 @@ func project_s(num_iters: int):
 	var uniform_set_div = get_uniform_set([
 		shader_name_div,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest, u_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		[sampler_nearest, v_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		[sampler_nearest, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_clamp, u_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_clamp, v_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 		p_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
 		div_texture_rid, 5, RenderingDevice.UNIFORM_TYPE_IMAGE])
 	dispatch(compute_list, shader_name_div, uniform_set_div)
-	## Apply boundary conditions to div
-	var shader_name_bnd_div = "set_square_bnd_div"
-	var uniform_set_bnd_div = get_uniform_set([
-		shader_name_bnd_div,
-		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		div_texture_rid, 5, RenderingDevice.UNIFORM_TYPE_IMAGE])
-	dispatch_square_bounds(compute_list, shader_name_bnd_div, uniform_set_bnd_div)
 
 	# Solve pressure iterations
 	for k in range(num_iters):
@@ -590,18 +596,11 @@ func project_s(num_iters: int):
 		var uniform_set_p = get_uniform_set([
 			shader_name_p,
 				consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-				[sampler_nearest, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+				[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 				p_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
-				[sampler_nearest, div_texture_rid], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-				[sampler_nearest, p_texture_prev_rid], 10, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
+				[sampler_nearest_clamp, div_texture_rid], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+				[sampler_nearest_clamp, p_texture_prev_rid], 10, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
 		dispatch(compute_list, shader_name_p, uniform_set_p)
-		## Apply boundary conditions to pressure
-		var shader_name_bnd_p = "set_square_bnd_p"
-		var uniform_set_bnd_p = get_uniform_set([
-			shader_name_bnd_p,
-			consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-			p_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
-		dispatch_square_bounds(compute_list, shader_name_bnd_p, uniform_set_bnd_p)
 
 	# Apply pressure gradient
 	var shader_name_apply_p = "project_apply_pressure"
@@ -610,18 +609,9 @@ func project_s(num_iters: int):
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
 		u_texture_rid, 1, RenderingDevice.UNIFORM_TYPE_IMAGE,
 		v_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		[sampler_nearest, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		[sampler_nearest, p_texture_rid], 4, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
+		[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_clamp, p_texture_rid], 4, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
 	dispatch(compute_list, shader_name_apply_p, uniform_set_apply_p)
-
-	# Apply boundary conditions to u and v
-	var shader_name_bnd_uv = "set_square_bnd_uv_open"
-	var uniform_set_bnd_uv = get_uniform_set([
-		shader_name_bnd_uv,
-		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		u_texture_rid, 1, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		v_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE])
-	dispatch_square_bounds(compute_list, shader_name_bnd_uv, uniform_set_bnd_uv)
 
 	rd.compute_list_end()
 
@@ -631,11 +621,11 @@ func advect(read_texture:RID, write_texture:RID, dt: float):
 	var uniform_set = get_uniform_set([
 		shader_name,
 			consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-			[sampler_nearest, u_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-			[sampler_nearest, v_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-			[sampler_nearest, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			[sampler_nearest_clamp, u_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			[sampler_nearest_clamp, v_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 			write_texture, 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
-			[sampler_nearest, read_texture], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
+			[sampler_nearest_clamp, read_texture], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
 
 	var pc_bytes := PackedFloat32Array([dt]).to_byte_array()
 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
@@ -648,29 +638,15 @@ func advect(read_texture:RID, write_texture:RID, dt: float):
 func stam_advect_temperature(dt: float):
 	swap_t_buffer()
 	advect(t_texture_prev_rid, t_texture_rid, dt)
-	var shader_name_bnd_p = "set_square_bnd_p"
-	var uniform_set_bnd_p = get_uniform_set([
-		shader_name_bnd_p,
-		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		p_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
-	var compute_list = rd.compute_list_begin()
-	dispatch_square_bounds(compute_list, shader_name_bnd_p, uniform_set_bnd_p)
-	rd.compute_list_end()
 
 func stam_advect_vel(dt: float):
 	swap_uv_buffers()
 	advect(u_texture_prev_rid, u_texture_rid, dt)
 	advect(v_texture_prev_rid, v_texture_rid, dt)
-	var shader_name_bnd_uv = "set_square_bnd_uv_open"
-	var uniform_set_bnd_uv = get_uniform_set([
-		shader_name_bnd_uv,
-		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		u_texture_rid, 1, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		v_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE])
 	var compute_list = rd.compute_list_begin()
-	dispatch_square_bounds(compute_list, shader_name_bnd_uv, uniform_set_bnd_uv)
+	set_square_bnd_uv_open(compute_list)
 	rd.compute_list_end()
-
+	
 func handle_ignition_gpu():
 	if (ignition_changed):
 		ignition_changed = false
@@ -685,25 +661,18 @@ func view_t():
 	view_gpu_texture_shader.material.shader = texture_shaders[shader_name]
 
 func view_div():
-	var compute_list = rd.compute_list_begin()
-	var shader_name_div = "project_compute_divergence"
-	var uniform_set_div = get_uniform_set([
-		shader_name_div,
-		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest, u_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		[sampler_nearest, v_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		[sampler_nearest, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		p_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		div_texture_rid, 5, RenderingDevice.UNIFORM_TYPE_IMAGE])
-	dispatch(compute_list, shader_name_div, uniform_set_div)
-	## Apply boundary conditions to div
-	var shader_name_bnd_div = "set_square_bnd_div"
-	var uniform_set_bnd_div = get_uniform_set([
-		shader_name_bnd_div,
-		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		div_texture_rid, 5, RenderingDevice.UNIFORM_TYPE_IMAGE])
-	dispatch_square_bounds(compute_list, shader_name_bnd_div, uniform_set_bnd_div)
-	rd.compute_list_end()
+	#var compute_list = rd.compute_list_begin()
+	#var shader_name_div = "project_compute_divergence"
+	#var uniform_set_div = get_uniform_set([
+		#shader_name_div,
+		#consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+		#[sampler_nearest_0, u_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		#[sampler_nearest_0, v_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		#[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		#p_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
+		#div_texture_rid, 5, RenderingDevice.UNIFORM_TYPE_IMAGE])
+	#dispatch(compute_list, shader_name_div, uniform_set_div)
+	#rd.compute_list_end()
 
 	var shader_name = "view_div"
 	view_gpu_texture_shader.material.set_shader_parameter("div_texture", div_texture)	
