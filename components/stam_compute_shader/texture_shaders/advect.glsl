@@ -13,12 +13,8 @@ layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
     float h2;
 } consts;
 
-layout(set = 0, binding = 1) uniform sampler2D u;
-layout(set = 0, binding = 2) uniform sampler2D v;
-layout(set = 0, binding = 3) uniform sampler2D s;
-
-layout(set = 0, binding = 4) uniform writeonly image2D write_texture;
-layout(set = 0, binding = 5) uniform sampler2D read_texture;
+layout(set = 0, binding = 1) uniform sampler2D read_texture;
+layout(set = 0, binding = 2, rgba16f) uniform writeonly image2D write_texture;
 // --- End Shared Buffer Definition
 
 layout(push_constant, std430) uniform Params {
@@ -37,8 +33,9 @@ void main() {
     // float dt0 = pc.dt * N;
     float dt0 = pc.dt * 64; // was N but we want constant scale at different grid sizes
 
-    float x = cell.x - dt0 * texture(u, UV).r;
-    float y = cell.y - dt0 * texture(v, UV).r;
+    vec4 cell_value = texelFetch(read_texture, cell, 0);
+    float x = cell.x - dt0 * cell_value.x;
+    float y = cell.y - dt0 * cell_value.y;
 
     // x = clamp(x, 0.5, N + 0.5);
     int i0 = int(x);
@@ -53,11 +50,11 @@ void main() {
     float t1 = y - float(j0);
     float t0 = 1.0 - t1;
 
-    float value = s0 * (t0 * texture(read_texture, vec2(i0, j0) * texelSize).r + 
-                        t1 * texture(read_texture, vec2(i0, j1) * texelSize).r) +
-                  s1 * (t0 * texture(read_texture, vec2(i1, j0) * texelSize).r + 
-                        t1 * texture(read_texture, vec2(i1, j1) * texelSize).r);
-
-    imageStore(write_texture, cell, vec4(value));
+    vec4 value = s0 * (t0 * texture(read_texture, vec2(i0, j0) * texelSize) + 
+                        t1 * texture(read_texture, vec2(i0, j1) * texelSize)) +
+                  s1 * (t0 * texture(read_texture, vec2(i1, j0) * texelSize) + 
+                        t1 * texture(read_texture, vec2(i1, j1) * texelSize));
+    value.b = cell_value.b;
+    imageStore(write_texture, cell, value);
 
 }

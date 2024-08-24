@@ -59,7 +59,7 @@ void main() {
     vec4 upValue = texture(read_texture, UV + up * texelSize);
     vec4 downValue = texture(read_texture, UV + down * texelSize);
 
-    bool skip = centerValue.b == 0.0;
+    bool skip = centerValue.b == 1.0;
 
     vec4 value = skip ? centerValue : (centerValue + a * (leftValue + rightValue + upValue + downValue)) / (1 + 4 * a);
     value.b = centerValue.b;

@@ -53,10 +53,10 @@ void main() {
     ivec2 cell = ivec2(idx, idy);
 
     vec4 uvst = texelFetch(uvst_in, cell, 0);
-    float u_val = uvst.r;
-    float v_val = uvst.g;
-    float s_val = uvst.b;
-    float t_val = uvst.a;
+    float u_val = uvst.x;
+    float v_val = uvst.y;
+    float s_val = uvst.z;
+    float t_val = uvst.w;
 
     float cooling = (t_val < 0.3) ? smoke_cooling : fire_cooling;
     t_val = max(t_val - cooling, 0.0);

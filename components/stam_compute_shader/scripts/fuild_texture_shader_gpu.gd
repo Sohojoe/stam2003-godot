@@ -418,10 +418,8 @@ func simulate_stam(dt: float) -> void:
 	cool_and_lift(dt)
 	diffuse_uvt(dt, num_iters_diffuse)
 	project_s(num_iters_projection)
-	stam_advect_vel(dt)
+	stam_advect_uvt(dt)
 	project_s(num_iters_projection)
-	# diffuse_t(dt, num_iters_diffuse)
-	stam_advect_temperature(dt)
 	if not skip_gi_rendering:
 		match di_debug_view:
 			1:
@@ -613,45 +611,9 @@ func diffuse_uvt(dt:float, num_iters:int):
 			[sampler_nearest_clamp, uvst_texture_prev_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 			uvst_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE])
 		dispatch(compute_list, shader_name, uniform_set, pc_bytes)
-		set_square_bnd_uv_open(compute_list)
+	set_square_bnd_uv_open(compute_list)
 
 	rd.compute_list_end()
-
-# func diffuse(read_texture, write_texture, dt:float, diff: float, num_iters:int):
-# 	var shader_name = "diffuse"
-# 	var uniform_set = get_uniform_set([
-# 		shader_name,
-# 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-# 		[sampler_nearest_clamp, read_texture], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-# 		write_texture, 2, RenderingDevice.UNIFORM_TYPE_IMAGE,
-# 		[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
-# 	var pc_bytes := PackedFloat32Array([dt, diff]).to_byte_array()
-# 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
-
-# 	var compute_list = rd.compute_list_begin()
-
-# 	for k in range(num_iters):
-# 		dispatch(compute_list, shader_name, uniform_set, pc_bytes)
-
-# 	rd.compute_list_end()
-
-# func diffuse_uv(dt:float, num_iters:int):
-# 	swap_uv_buffers()
-# 	diffuse(u_texture_prev_rid, u_texture_rid, dt, diffuse_visc_value, num_iters)
-# 	var compute_list_u = rd.compute_list_begin()
-# 	set_square_bnd_uv_open(compute_list_u)
-# 	rd.compute_list_end()
-# 	diffuse(v_texture_prev_rid, v_texture_rid, dt, diffuse_visc_value, num_iters)
-# 	var compute_list = rd.compute_list_begin()
-# 	set_square_bnd_uv_open(compute_list)
-# 	rd.compute_list_end()
-
-
-# func diffuse_t(dt:float, num_iters:int):
-
-# 	swap_t_buffer()
-# 	diffuse(t_texture_prev_rid, t_texture_rid, dt, diffuse_diff_value, num_iters)
-
 
 func project_s(num_iters: int):
 	
@@ -695,35 +657,23 @@ func project_s(num_iters: int):
 
 	rd.compute_list_end()
 
+func stam_advect_uvt(dt: float):
+	swap_uvst_buffer()
+	var read_texture = uvst_texture_prev_rid
+	var write_texture = uvst_texture_rid
 
-func advect(read_texture:RID, write_texture:RID, dt: float):
 	var shader_name = "advect"
 	var uniform_set = get_uniform_set([
 		shader_name,
 			consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-			[sampler_nearest_clamp, u_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-			[sampler_nearest_clamp, v_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-			[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-			write_texture, 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
-			[sampler_nearest_clamp, read_texture], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
+			[sampler_nearest_clamp, read_texture], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			write_texture, 2, RenderingDevice.UNIFORM_TYPE_IMAGE])
 
 	var pc_bytes := PackedFloat32Array([dt]).to_byte_array()
 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
 
 	var compute_list = rd.compute_list_begin()
 	dispatch(compute_list, shader_name, uniform_set, pc_bytes)
-	rd.compute_list_end()
-
-
-func stam_advect_temperature(dt: float):
-	swap_t_buffer()
-	advect(t_texture_prev_rid, t_texture_rid, dt)
-
-func stam_advect_vel(dt: float):
-	swap_uv_buffers()
-	advect(u_texture_prev_rid, u_texture_rid, dt)
-	advect(v_texture_prev_rid, v_texture_rid, dt)
-	var compute_list = rd.compute_list_begin()
 	set_square_bnd_uv_open(compute_list)
 	rd.compute_list_end()
 	
