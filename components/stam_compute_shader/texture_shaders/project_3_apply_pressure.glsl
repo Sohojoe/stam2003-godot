@@ -13,10 +13,10 @@ layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
     float h2;
 } consts;
 
-layout(set = 0, binding = 1, r16f) uniform image2D u;
-layout(set = 0, binding = 2, r16f) uniform image2D v;
-layout(set = 0, binding = 3) uniform sampler2D s;
-layout(set = 0, binding = 4) uniform sampler2D p;
+layout(set = 0, binding = 1) uniform sampler2D divps_in;
+layout(set = 0, binding = 2) uniform sampler2D uvst_in;
+// layout(set = 0, binding = 3) uniform sampler2D s;
+layout(set = 0, binding = 4, rgba16f) uniform image2D uvst_out;
 // --- End Shared Buffer Definition
 
 // layout(push_constant, std430) uniform Params {
@@ -38,7 +38,9 @@ void main() {
     // if (texelFetch(s, cell, 0).r == 0.0 || idx == 0 || idx >= consts.numX - 1 || idy == 0 || idy >= consts.numY - 1) {
     //     return;
     // }
-    bool skip = (texelFetch(s, cell, 0).r == 0.0);
+    vec4 uvst = texelFetch(uvst_in, cell, 0);
+    vec4 divps = texelFetch(divps_in, cell, 0);
+    bool skip = divps.z == 1.0;
 
     vec2 cell_l = UV + left * texelSize;
     vec2 cell_r = UV + right * texelSize;
@@ -48,15 +50,11 @@ void main() {
     // float _h = 1.0 / max(consts.numX, consts.numY);
     float _h = 1.0 / 64;
 
-    float u_val = imageLoad(u, cell).r;
-    float v_val = imageLoad(v, cell).r;
+    uvst.x -= 0.5 * (texture(divps_in, cell_r).y - texture(divps_in, cell_l).y) / _h;
+    uvst.y -= 0.5 * (texture(divps_in, cell_d).y - texture(divps_in, cell_u).y) / _h;
 
-    u_val -= 0.5 * (texture(p, cell_r).r - texture(p, cell_l).r) / _h;
-    v_val -= 0.5 * (texture(p, cell_d).r - texture(p, cell_u).r) / _h;
+    uvst.x = skip ? 0 : uvst.x;
+    uvst.y = skip ? 0 : uvst.y;
 
-    u_val = skip ? 0 : u_val;
-    v_val = skip ? 0 : v_val;
-
-    imageStore(u, cell, vec4(u_val));
-    imageStore(v, cell, vec4(v_val));
+    imageStore(uvst_out, cell, uvst);
 }

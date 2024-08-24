@@ -13,10 +13,9 @@ layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
     float h2;
 } consts;
 
-layout(set = 0, binding = 3) uniform sampler2D s;
-layout(set = 0, binding = 4, r16f) uniform image2D p;
-layout(set = 0, binding = 5) uniform sampler2D div;
-layout(set = 0, binding = 10) uniform sampler2D p_prev;
+layout(set = 0, binding = 1) uniform sampler2D divps_prev;
+// layout(set = 0, binding = 2) uniform sampler2D s;
+layout(set = 0, binding = 3, rgba16f) uniform image2D divps_out;
 // --- End Shared Buffer Definition
 
 // layout(push_constant, std430) uniform Params {
@@ -39,17 +38,18 @@ void main() {
     // bool skip = (idx == 0 || idx >= numX - 1 || idy == 0 || idy >= numY - 1) || texelFetch(s, cell, 0).r == 0.0;
     // bool skip = (texelFetch(s, cell, 0).r == 0.0);
 
-    float div_value = texelFetch(div, cell, 0).r;
-    float p_l = texture(p_prev, UV + left * texelSize).r;
-    float p_r = texture(p_prev, UV + right * texelSize).r;
-    float p_u = texture(p_prev, UV + up * texelSize).r;
-    float p_d = texture(p_prev, UV + down * texelSize).r;
+    vec4 divps = texelFetch(divps_prev, cell, 0);
+    float div_value = divps.x;
+    float p_l = texture(divps_prev, UV + left * texelSize).y;
+    float p_r = texture(divps_prev, UV + right * texelSize).y;
+    float p_u = texture(divps_prev, UV + up * texelSize).y;
+    float p_d = texture(divps_prev, UV + down * texelSize).y;
 
     // float value = skip ? 0.0 : (div_value + p_l + p_r + p_u + p_d) * 0.25;
     float value = (div_value + p_l + p_r + p_u + p_d) * 0.25;
-
+    divps.y = value;
     // if (!skip) {
     //     imageStore(p, cell, vec4(value));
     // }
-    imageStore(p, cell, vec4(value));
+    imageStore(divps_out, cell, divps);
 }

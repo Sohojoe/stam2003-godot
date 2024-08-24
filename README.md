@@ -2,6 +2,12 @@
  lets implment Real-Time Fluid Dynamics for Games, Stam 2003
 
 
+### 007 combine textures
+| | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096 | 8192 | 16,384  | 32,768 |
+|-|-|-|-|-|-|-|-|-|-|-|
+|M3| xxx | xxx | xxx | xxx | xxx | xxx | xxx | xxx | xxx | xxx |
+|4090| 4407 | xxx | xxx | xxx | 2725 | 710 | 131 | 30 | 4 | xxx |
+
 
 ### 006 SMIT + boundary optimizations
 | | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096 | 8192 | 16,384  | 32,768 |

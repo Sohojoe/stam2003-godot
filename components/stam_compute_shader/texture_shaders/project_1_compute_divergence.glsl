@@ -13,11 +13,9 @@ layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
     float h2;
 } consts;
 
-layout(set = 0, binding = 1) uniform sampler2D u;
-layout(set = 0, binding = 2) uniform sampler2D v;
-layout(set = 0, binding = 3) uniform sampler2D s;
-layout(set = 0, binding = 4, r16f) uniform image2D p;
-layout(set = 0, binding = 5, r16f) uniform image2D div;
+layout(set = 0, binding = 1) uniform sampler2D uvst_in;
+// layout(set = 0, binding = 2) uniform sampler2D s;
+layout(set = 0, binding = 3, rgba16f) uniform image2D divps_out;
 
 // layout(push_constant, std430) uniform Params {
 //     int _add_params_here;
@@ -35,10 +33,10 @@ void main() {
     vec2 texelSize = 1.0 / vec2(numX, numY);
     vec2 UV = (vec2(cell) + 0.5) * texelSize;
 
-    // set p to 0.
-    imageStore(p, cell, vec4(0.0));
+    vec4 uvst = texelFetch(uvst_in, cell, 0);
+    vec4 divps = vec4(0.0, 0.0, uvst.z, 0.0);
 
-    bool skip = (texelFetch(s, cell, 0).r == 0.0);
+    bool skip = divps.z == 1.0;
 
     vec2 cell_l = UV + left * texelSize;
     vec2 cell_r = UV + right * texelSize;
@@ -48,12 +46,11 @@ void main() {
     // float _h = 1.0 / max(consts.numX, consts.numY);
     const float _h = 1.0 / 64;
     float value = -0.5 * _h * (
-        texture(u, UV + right * texelSize).r -
-        texture(u, UV + left * texelSize).r + 
-        texture(v, UV + down * texelSize).r - 
-        texture(v, UV + up * texelSize).r);
+        texture(uvst_in, UV + right * texelSize).x -
+        texture(uvst_in, UV + left * texelSize).x + 
+        texture(uvst_in, UV + down * texelSize).y - 
+        texture(uvst_in, UV + up * texelSize).y);
 
-    value = skip ? 0 : value;
-
-    imageStore(div, cell, vec4(value));
+    divps.x = skip ? 0 : value;
+    imageStore(divps_out, cell, divps);
 }
