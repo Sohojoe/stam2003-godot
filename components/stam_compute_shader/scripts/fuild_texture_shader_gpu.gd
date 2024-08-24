@@ -528,36 +528,60 @@ func apply_ignition():
 	dispatch(compute_list, shader_name, uniform_set)
 	rd.compute_list_end()
 
-func diffuse(read_texture, write_texture, dt:float, diff: float, num_iters:int):
+func diffuse_uv(dt:float, num_iters:int):
 	var shader_name = "diffuse"
-	var uniform_set = get_uniform_set([
-		shader_name,
-		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest, read_texture], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		write_texture, 2, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		[sampler_nearest, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
-	var pc_bytes := PackedFloat32Array([dt, diff]).to_byte_array()
+	var shader_name_bnd_uv = "set_square_bnd_uv_open"
+	var pc_bytes := PackedFloat32Array([dt, diffuse_visc_value]).to_byte_array()
 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
 
 	var compute_list = rd.compute_list_begin()
 
 	for k in range(num_iters):
+		swap_uv_buffers()
+		var uniform_set = get_uniform_set([
+			shader_name,
+			consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+			[sampler_nearest, u_texture_prev_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			u_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE,
+			[sampler_nearest, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
 		dispatch(compute_list, shader_name, uniform_set, pc_bytes)
+		uniform_set = get_uniform_set([
+			shader_name,
+			consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+			[sampler_nearest, v_texture_prev_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			v_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE,
+			[sampler_nearest, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
+		dispatch(compute_list, shader_name, uniform_set, pc_bytes)
+	#var uniform_set_bnd_uv = get_uniform_set([
+		#shader_name_bnd_uv,
+		#consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+		#u_texture_rid, 1, RenderingDevice.UNIFORM_TYPE_IMAGE,
+		#v_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE])
+	#dispatch_square_bounds(compute_list, shader_name_bnd_uv, uniform_set_bnd_uv)
 
 	rd.compute_list_end()
 
 
-func diffuse_uv(dt:float, num_iters:int):
-
-	swap_uv_buffers()
-	diffuse(u_texture_prev_rid, u_texture_rid, dt, diffuse_visc_value, num_iters)
-	diffuse(v_texture_prev_rid, v_texture_rid, dt, diffuse_visc_value, num_iters)
-
 
 func diffuse_t(dt:float, num_iters:int):
+	var shader_name = "diffuse"
+	var pc_bytes := PackedFloat32Array([dt, diffuse_diff_value]).to_byte_array()
+	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
 
-	swap_t_buffer()
-	diffuse(t_texture_prev_rid, t_texture_rid, dt, diffuse_diff_value, num_iters)
+	var compute_list = rd.compute_list_begin()
+
+	for k in range(num_iters):
+		swap_t_buffer()
+		var uniform_set = get_uniform_set([
+			shader_name,
+			consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+			[sampler_nearest, t_texture_prev_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			t_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE,
+			[sampler_nearest, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
+		dispatch(compute_list, shader_name, uniform_set, pc_bytes)
+
+	rd.compute_list_end()
+
 
 
 func project_s(num_iters: int):
