@@ -8,9 +8,9 @@ extends Sprite2D
 		view_texture_size = value
 		_update_texture()
 
-var viewport: Viewport
-var view_texture: Texture
-var shader_material: ShaderMaterial
+
+
+var view_texture
 
 func _ready() -> void:
 	_update_texture()
@@ -18,66 +18,28 @@ func _ready() -> void:
 func _set_view_texture_size(value):
 	view_texture_size = value
 	_update_texture()
-	
-func toggle_is_updating():
-	if viewport.render_target_update_mode == SubViewport.UPDATE_DISABLED:
-		enable()
-	else:
-		disable()
-		
-func disable():
-	visible = false
-	viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
-
-func enable():
-	visible = true
-	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-
 
 func _update_texture() -> void:
-	# Create a new Viewport
-	if viewport:
-		viewport.queue_free()  # Clean up existing viewport
-	viewport = SubViewport.new()
-	#add_something_to_viewport(viewport)
-	viewport.size = Vector2(view_texture_size, view_texture_size)
-	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	#viewport.set_clear_mode(Viewport.CLEAR_MODE_ONCE)
-	# viewport.usage = SubViewport.usage
-	#viewport.render_target_vflip = true  # Ensure the texture is not flipped
-
-	# Get the texture from the viewport
-	view_texture = viewport.get_texture()
-	texture = view_texture
-
-	# Add the viewport as a child (optional, if you want to display it in the scene)
-	add_child(viewport)
-	shader_material = ShaderMaterial.new()
-	# var shader = preload("res://components/stam_compute_shader/texture_shaders/view_t.gdshader")
-	# shader_material.shader = shader
-	#var fred = shader.get_shader_uniform_list()
-	material = shader_material
-	# viewport.set_shader(shader_material)
-	
-	# Initialize rendering to the viewport using your pipeline
-	# _init_render_pipeline()
-
-# func _init_render_pipeline():
-	# This is where you set up your shaders and render passes.
-	# Bind the viewport's texture to the rendering pipeline
-	# This can be done by attaching the viewport's texture to your shader pipeline
-	# and performing the render passes.
-	
-	# Example:
-	# var shader_material = ShaderMaterial.new()
-	# shader_material.set_shader(your_fragment_shader)
-	# viewport.set_shader(shader_material)
-
-	# Then you would execute your render passes to apply your fluid simulation
-	# shaders to the viewport's texture, similar to how you used to render
-	# to the `Texture2DRD`.
-
-#func add_something_to_viewport(viewport: SubViewport):
-	#var label = Label.new()
-	#label.text = "Hello world"
-	#viewport.add_child(label)
+	var rd = RenderingServer.get_rendering_device()
+	var fmt3 = RDTextureFormat.new()
+	fmt3.width = view_texture_size
+	fmt3.height = view_texture_size
+	fmt3.format = RenderingDevice.DATA_FORMAT_R32G32B32A32_SFLOAT
+	fmt3.usage_bits = RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
+			RenderingDevice.TEXTURE_USAGE_CAN_COPY_TO_BIT | \
+			RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT | \
+			RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT | \
+			RenderingDevice.SAMPLER_FILTER_NEAREST
+	var view3 = RDTextureView.new()
+	var default_color = Color(1.0, 1.0, 0.0, .2)
+	var data = PackedFloat32Array()
+	data.resize(view_texture_size * view_texture_size * 4) # 4
+	for i in range(0, view_texture_size * view_texture_size * 4, 4):
+		data[i] = default_color.r
+		data[i + 1] = default_color.g
+		data[i + 2] = default_color.b
+		data[i + 3] = default_color.a
+	view_texture = rd.texture_create(fmt3, view3, [data.to_byte_array()])
+	var texture_rd = Texture2DRD.new()
+	texture_rd.texture_rd_rid = view_texture
+	texture = texture_rd

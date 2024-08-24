@@ -43,16 +43,16 @@ var shader_file_names = {
 	"cool_and_lift": "res://components/stam_compute_shader/texture_shaders/cool_and_lift.glsl",
 	"apply_ignition": "res://components/stam_compute_shader/texture_shaders/apply_ignition.glsl",
 	"set_square_bnd_uv_open": "res://components/stam_compute_shader/texture_shaders/set_square_bnd_uv_open.glsl",
-	#"view_t": "res://components/stam_compute_shader/texture_shaders/view_t.glsl",
-	#"view_div": "res://components/stam_compute_shader/texture_shaders/view_div.glsl",
-	#"view_p": "res://components/stam_compute_shader/texture_shaders/view_p.glsl",
-	#"view_uv": "res://components/stam_compute_shader/texture_shaders/view_uv.glsl",
+	"view_t": "res://components/stam_compute_shader/texture_shaders/view_t.glsl",
+	"view_div": "res://components/stam_compute_shader/texture_shaders/view_div.glsl",
+	"view_p": "res://components/stam_compute_shader/texture_shaders/view_p.glsl",
+	"view_uv": "res://components/stam_compute_shader/texture_shaders/view_uv.glsl",
 }
 var texture_shader_file_names = {
-	"view_t": "res://components/stam_compute_shader/texture_shaders/view_t.gdshader",
-	"view_p": "res://components/stam_compute_shader/texture_shaders/view_p.gdshader",
-	"view_div": "res://components/stam_compute_shader/texture_shaders/view_div.gdshader",
-	"view_uv": "res://components/stam_compute_shader/texture_shaders/view_uv.gdshader",
+	#"view_t": "res://components/stam_compute_shader/texture_shaders/view_t.gdshader",
+	#"view_p": "res://components/stam_compute_shader/texture_shaders/view_p.gdshader",
+	#"view_div": "res://components/stam_compute_shader/texture_shaders/view_div.gdshader",
+	#"view_uv": "res://components/stam_compute_shader/texture_shaders/view_uv.gdshader",
 }
 func _ready():
 	camera = find_camera(get_tree().current_scene)
@@ -104,9 +104,6 @@ func handle_ignition_cpu():
 
 func restart():
 	RenderingServer.call_on_render_thread(initialize_compute_code.bind(grid_size_n))
-
-func toggle_is_updating():
-	view_gpu_texture_shader.toggle_is_updating()
 
 ###############################################################################
 # rendering thread.
@@ -322,9 +319,6 @@ func initialize_compute_code(grid_size: int) -> void:
 
 
 func free_previous_resources():
-	view_gpu_texture_shader.material.set_shader_parameter("p_texture", null)	
-	view_gpu_texture_shader.material.shader = null
-
 	if consts_buffer:
 		rd.free_rid(consts_buffer)
 
@@ -662,40 +656,72 @@ func mark_ignition_changed() -> void:
 
 func view_t():
 	var shader_name = "view_t"
-	view_gpu_texture_shader.material.set_shader_parameter("uvst_in", uvst_texture)	
-	view_gpu_texture_shader.material.shader = texture_shaders[shader_name]
+	var compute_list = rd.compute_list_begin()
+	var uniform_set = get_uniform_set([
+		shader_name,
+		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+		[sampler_nearest_0, uvst_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		view_gpu_texture_shader.view_texture, 2, RenderingDevice.UNIFORM_TYPE_IMAGE],
+		)
+	dispatch_view(compute_list, shader_name, uniform_set)
+	rd.compute_list_end()
+
 
 func view_div():
-	#var compute_list = rd.compute_list_begin()
-	#var shader_name_div = "project_compute_divergence"
-	#var uniform_set_div = get_uniform_set([
-		#shader_name_div,
-		#consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		#[sampler_nearest_0, u_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		#[sampler_nearest_0, v_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		#[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		#p_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		#div_texture_rid, 5, RenderingDevice.UNIFORM_TYPE_IMAGE])
-	#dispatch(compute_list, shader_name_div, uniform_set_div)
-	#rd.compute_list_end()
+	var compute_list = rd.compute_list_begin()
+	var shader_name_div = "project_compute_divergence"
+	var uniform_set_div = get_uniform_set([
+		shader_name_div,
+		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+		[sampler_nearest_0, u_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_0, v_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		p_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
+		div_texture_rid, 5, RenderingDevice.UNIFORM_TYPE_IMAGE])
+	dispatch(compute_list, shader_name_div, uniform_set_div)
 
 	var shader_name = "view_div"
-	view_gpu_texture_shader.material.set_shader_parameter("div_texture", div_texture)	
-	view_gpu_texture_shader.material.set_shader_parameter("color_scale", debug_div_color_scale)	
-	view_gpu_texture_shader.material.shader = texture_shaders[shader_name]
+	var pc_data := PackedFloat32Array([debug_div_color_scale])
+	var pc_bytes = pc_data.to_byte_array()
+	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
+	var uniform_set = get_uniform_set([
+		shader_name,
+		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+		[sampler_nearest_0, div_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		view_gpu_texture_shader.view_texture, 2, RenderingDevice.UNIFORM_TYPE_IMAGE],
+		)
+	dispatch_view(compute_list, shader_name, uniform_set, pc_bytes)
+	rd.compute_list_end()
 
 func view_p():
 	var shader_name = "view_p"
-	view_gpu_texture_shader.material.set_shader_parameter("p_texture", p_texture)	
-	view_gpu_texture_shader.material.set_shader_parameter("color_scale", debug_p_color_scale)	
-	view_gpu_texture_shader.material.shader = texture_shaders[shader_name]
+	var pc_data := PackedFloat32Array([debug_p_color_scale])
+	var pc_bytes = pc_data.to_byte_array()
+	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
+	var compute_list = rd.compute_list_begin()
+	var uniform_set = get_uniform_set([
+		shader_name,
+		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+		[sampler_nearest_0, p_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		view_gpu_texture_shader.view_texture, 2, RenderingDevice.UNIFORM_TYPE_IMAGE],
+		)
+	dispatch_view(compute_list, shader_name, uniform_set, pc_bytes)
+	rd.compute_list_end()
 
 func view_uv():
 	var shader_name = "view_uv"
-	view_gpu_texture_shader.material.set_shader_parameter("u_texture", u_texture)	
-	view_gpu_texture_shader.material.set_shader_parameter("v_texture", v_texture)	
-	view_gpu_texture_shader.material.set_shader_parameter("color_scale", debug_uv_color_scale)	
-	view_gpu_texture_shader.material.shader = texture_shaders[shader_name]
+	var pc_data := PackedFloat32Array([debug_uv_color_scale])
+	var pc_bytes = pc_data.to_byte_array()
+	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
+	var compute_list = rd.compute_list_begin()
+	var uniform_set = get_uniform_set([
+		shader_name,
+		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+		[sampler_nearest_0, uvst_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		view_gpu_texture_shader.view_texture, 2, RenderingDevice.UNIFORM_TYPE_IMAGE],
+		)
+	dispatch_view(compute_list, shader_name, uniform_set, pc_bytes)
+	rd.compute_list_end()
 
 # -----------------------------------------------------------------------------------
 # UI and debug vars and code

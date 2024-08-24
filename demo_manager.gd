@@ -45,7 +45,7 @@ func handle_input():
 	if Input.is_action_just_pressed("restart"):
 		fire_gpu_texture_shader.restart()
 	if Input.is_action_just_pressed("toggle_view"):
-		fire_gpu_texture_shader.toggle_is_updating()
+		fire_gpu_texture_shader.skip_gi_rendering = !fire_gpu_texture_shader.skip_gi_rendering
 
 func update_debug():
 	if mode == 0:

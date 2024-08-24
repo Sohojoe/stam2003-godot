@@ -40,7 +40,7 @@ vec4 get_fire_color(float val) {
 }
 
 void fragment() {
-    float temp = texture(uvst_in, UV).a; 
+    float temp = texture(uvst_in, UV).a;
     COLOR = get_fire_color(temp);
 }
 

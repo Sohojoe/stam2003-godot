@@ -13,9 +13,8 @@ layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
     float h2;
 } consts;
 
-layout(set = 0, binding = 1) uniform sampler2D u;
-layout(set = 0, binding = 2) uniform sampler2D v;
-layout(set=0,binding=20,rgba32f) writeonly uniform image2D output_image;
+layout(set = 0, binding = 1) uniform sampler2D p;
+layout(set = 0, binding = 2,rgba32f) writeonly uniform image2D output_image;
 
 
 // --- End Shared Buffer Definition
@@ -33,24 +32,16 @@ vec3 hsv2rgb(vec3 c) {
 }
 
 void main() {
-    vec2 viewCoord=gl_GlobalInvocationID.xy;
-    ivec2 iviewCoord=ivec2(viewCoord.xy);
-    ivec2 iinputCoord = ivec2((viewCoord / vec2(consts.viewX, consts.viewY)) * vec2(consts.numX, consts.numY) );
-    uint idx = iinputCoord.x;
-    uint idy = iinputCoord.y;
-    uint N = consts.numX -1;
+    ivec2 cell = ivec2(gl_GlobalInvocationID.xy);
+    vec2 texelSize = 1.0 / vec2(consts.viewX, consts.viewY);
+    vec2 UV = (vec2(cell) + 0.5) * texelSize;
 
-    if (idx > N || idy > N) return;
-
-    vec2 UV = viewCoord.xy / vec2(consts.viewX, consts.viewY);
-    float u_val = texture(u, UV).r; 
-    float v_val = texture(v, UV).r; 
-	u_val = min(u_val / pc.color_scale, 1.);
-	v_val = min(v_val / pc.color_scale, 1.);
+    float p = texture(p, UV).r; 
+	p = min(p / pc.color_scale, 1.);
 
     // Calculate magnitude and direction
-    float magnitude = sqrt(u_val * u_val + v_val * v_val);
-    float direction = atan(v_val, u_val);  // Range from -PI to PI
+    float magnitude = sqrt(p * p + p * p);
+    float direction = atan(p, p);  // Range from -PI to PI
 
     // Normalize direction to [0, 1] range for hue
     float hue = (direction + PI) / (2.0 * PI);
@@ -60,5 +51,5 @@ void main() {
     // Convert HSV to RGB
     vec3 rgb = hsv2rgb(vec3(hue, saturation, value));
     vec4 color = vec4(rgb, 1.0);
-    imageStore(output_image, iviewCoord, color);
+    imageStore(output_image, cell, color);
 }

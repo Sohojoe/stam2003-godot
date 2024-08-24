@@ -13,8 +13,8 @@ layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
     float h2;
 } consts;
 
-layout(set = 0, binding = 8) uniform sampler2D t;
-layout(set=0,binding=20,rgba32f) writeonly uniform image2D output_image;
+layout(set = 0, binding = 1) uniform sampler2D uvst_in;
+layout(set = 0, binding = 2,rgba32f) writeonly uniform image2D output_image;
 
 
 // --- End Shared Buffer Definition
@@ -44,22 +44,12 @@ vec4 get_fire_color(float val) {
 }
 
 void main() {
-    vec2 viewCoord = gl_GlobalInvocationID.xy;
-    ivec2 iviewCoord = ivec2(viewCoord.xy);
-    ivec2 iinputCoord = ivec2((viewCoord / vec2(consts.viewX, consts.viewY)) * vec2(consts.numX, consts.numY) );
-    uint idx = iinputCoord.x;
-    uint idy = iinputCoord.y;
-    uint N = consts.numX -1;
+    ivec2 cell = ivec2(gl_GlobalInvocationID.xy);
+    vec2 texelSize = 1.0 / vec2(consts.viewX, consts.viewY);
+    vec2 UV = (vec2(cell) + 0.5) * texelSize;
 
-    if (idx >= N || idy >= N || idx < uint(1) || idy < uint(1))
-    {
-        imageStore(output_image, iviewCoord, vec4(0.0));
-        return;
-    }
-
-    vec2 UV = viewCoord.xy / vec2(consts.viewX, consts.viewY);
-
-    float temp = texture(t, UV).r; 
+    float temp = texture(uvst_in, UV).a; 
     vec4 color = get_fire_color(temp);
-    imageStore(output_image, iviewCoord, color);
+
+    imageStore(output_image, cell, color);
 }

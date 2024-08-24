@@ -62,7 +62,9 @@ void main() {
     t_val = max(t_val - cooling, 0.0);
 
     float target_v = t_val * lift;
-    v_val += (target_v - v_val) * acceleration;
+    float v_diff = (target_v - v_val) * acceleration;
+    v_diff = max(v_diff, 0.0);
+    v_val += v_diff;
 
     if (t_val > 0.9 && pc.add_perturbance_probability > 0) {
         float chance = (1.0 - (t_val -0.9) * 10.0) * rand(gl_GlobalInvocationID.xy);
