@@ -13,8 +13,7 @@ layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
     float h2;
 } consts;
 
-layout(set = 0, binding = 1, r16f) uniform image2D u;
-layout(set = 0, binding = 2, r16f) uniform image2D v;
+layout(set = 0, binding = 1, rgba16f) uniform image2D uvst;
 
 void main() {
     uint i = gl_GlobalInvocationID.x;
@@ -25,29 +24,25 @@ void main() {
     uint num_cells_x = numX - 1;
 
     // left
-    float u_val = imageLoad(u, ivec2(1, i)).r;
-    u_val = u_val < 0 ? u_val : 0;
-    float v_val = imageLoad(v, ivec2(1, i)).r;
-    imageStore(u, ivec2(0, i), vec4(u_val));
-    imageStore(v, ivec2(0, i), vec4(v_val));
+    vec4 val = imageLoad(uvst, ivec2(1, i));
+    val.r = val.r < 0 ? val.r : 0;
+    // var.b = 0.0; // set boundary state to 0
+    imageStore(uvst, ivec2(0, i), val);
     // right
-    u_val = imageLoad(u, ivec2(num_cells_x - 1, i)).r;
-    u_val = u_val > 0 ? u_val : 0;
-    v_val = imageLoad(v, ivec2(num_cells_x - 1, i)).r;
-    imageStore(u, ivec2(num_cells_x, i), vec4(u_val));
-    imageStore(v, ivec2(num_cells_x, i), vec4(v_val));
+    val = imageLoad(uvst, ivec2(num_cells_x - 1, i));
+    val.r = val.r > 0 ? val.r : 0;
+    // var.b = 0.0; // set boundary state to 0
+    imageStore(uvst, ivec2(num_cells_x, i), val);
     // top
-    u_val = imageLoad(u, ivec2(i, 1)).r;
-    v_val = imageLoad(v, ivec2(i, 1)).r;
-    v_val = v_val < 0 ? v_val : 0;
-    imageStore(u, ivec2(i, 0), vec4(u_val));
-    imageStore(v, ivec2(i, 0), vec4(v_val));
+    val = imageLoad(uvst, ivec2(i, 1));
+    val.g = val.g < 0 ? val.g : 0;
+    // var.b = 0.0; // set boundary state to 0
+    imageStore(uvst, ivec2(i, 0), val);
     // bottom
-    u_val = imageLoad(u, ivec2(i, num_cells_y - 1)).r;
-    v_val = imageLoad(v, ivec2(i, num_cells_y - 1)).r;
-    v_val = v_val > 0 ? v_val : 0;
-    imageStore(u, ivec2(i, num_cells_y), vec4(u_val));
-    imageStore(v, ivec2(i, num_cells_y), vec4(v_val));
+    val = imageLoad(uvst, ivec2(i, num_cells_y - 1));
+    val.g = val.g > 0 ? val.g : 0;
+    // var.b = 0.0; // set boundary state to 0
+    imageStore(uvst, ivec2(i, num_cells_y), val);
     // corners
     // u_val = imageLoad(u, ivec2(1, 1)).r;
     // v_val = imageLoad(v, ivec2(1, 1)).r;

@@ -15,14 +15,13 @@ layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
 
 
 layout(set = 0, binding = 1) uniform sampler2D read_texture;
-layout(set = 0, binding = 2) uniform writeonly image2D write_texture;
-layout(set = 0, binding = 3) uniform sampler2D s;
+layout(set = 0, binding = 2, rgba16f) uniform writeonly image2D write_texture;
 
 // --- End Shared Buffer Definition
 
 layout(push_constant, std430) uniform Params {
+    vec4 diff;
     float dt;
-    float diff;
 } pc;
 
 
@@ -51,19 +50,18 @@ void main() {
     ivec2 cell = ivec2(gl_GlobalInvocationID.xy);
     vec2 texelSize = 1.0 / vec2(numX, numY);
     vec2 UV = (vec2(cell) + 0.5) * texelSize;
-    float a = pc.dt * 64 * 64 * pc.diff;
+    // float a = pc.dt * 64 * 64 * pc.diff;
+    vec4 a = pc.dt * 64 * 64 * pc.diff;
 
+    vec4 centerValue = texture(read_texture, UV);
+    vec4 leftValue = texture(read_texture, UV + left * texelSize);
+    vec4 rightValue = texture(read_texture, UV + right * texelSize);
+    vec4 upValue = texture(read_texture, UV + up * texelSize);
+    vec4 downValue = texture(read_texture, UV + down * texelSize);
 
-    bool skip = texelFetch(s, cell, 0).r == 0.0;
+    bool skip = centerValue.b == 0.0;
 
-    float centerValue = texture(read_texture, UV).r;
-    float leftValue = texture(read_texture, UV + left * texelSize).r;
-    float rightValue = texture(read_texture, UV + right * texelSize).r;
-    float upValue = texture(read_texture, UV + up * texelSize).r;
-    float downValue = texture(read_texture, UV + down * texelSize).r;    
-
-    float value = skip ? 0.0 : (centerValue + a * (leftValue + rightValue + upValue + downValue)) / (1 + 4 * a);
-
-    vec4 outputValue = vec4(value);
-    imageStore(write_texture, cell, outputValue);
+    vec4 value = skip ? centerValue : (centerValue + a * (leftValue + rightValue + upValue + downValue)) / (1 + 4 * a);
+    value.b = centerValue.b;
+    imageStore(write_texture, cell, value);
 }

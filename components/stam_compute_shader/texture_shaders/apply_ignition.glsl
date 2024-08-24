@@ -14,10 +14,9 @@ layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
     float h2;
 } consts;
 
-layout(set = 0, binding = 1, r16f) uniform image2D u;
-layout(set = 0, binding = 2, r16f) uniform image2D v;
-layout(set = 0, binding = 8, r16f) uniform image2D t;
-layout(set = 0, binding = 11) uniform sampler2D i;
+layout(set = 0, binding = 1) uniform sampler2D uvst_in;
+layout(set = 0, binding = 2, rgba16f) uniform image2D uvst_out;
+layout(set = 0, binding = 3) uniform sampler2D i;
 
 // --- End Shared Buffer Definition
 
@@ -28,7 +27,7 @@ void main() {
 
     uint idx = gl_GlobalInvocationID.x;
     uint idy = gl_GlobalInvocationID.y;
-    uint N = consts.numX -1;
+    // uint N = consts.numX -1;
 
     // if (idx >= N || idy >= N) return;
     ivec2 cell = ivec2(idx, idy);
@@ -36,8 +35,8 @@ void main() {
     // todo: add check for if cell if free or not
 
     if (texelFetch(i, cell, 0).r == 1.0) {
-        imageStore(t, cell, vec4(1.0));
-        // imageStore(u, cell, vec4(0.0));
-        // imageStore(v, cell, vec4(0.0));
+        vec4 uvst = texture(uvst_in, cell);
+        uvst.a = 1.0;
+        imageStore(uvst_out, cell, uvst);
     }
 }

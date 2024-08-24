@@ -14,9 +14,8 @@ layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
     float h2;
 } consts;
 
-layout(set = 0, binding = 1, r16f) uniform image2D u;
-layout(set = 0, binding = 2, r16f) uniform image2D v;
-layout(set = 0, binding = 8, r16f) uniform image2D t;
+layout(set = 0, binding = 1) uniform sampler2D uvst_in;
+layout(set = 0, binding = 2, rgba16f) uniform image2D uvst_out;
 
 // --- End Shared Buffer Definition
 
@@ -37,7 +36,7 @@ void main() {
 
     uint idx = gl_GlobalInvocationID.x;
     uint idy = gl_GlobalInvocationID.y;
-    uint N = consts.numX -1;
+    // uint N = consts.numX -1;
 
     // if (idx >= N || idy >= N) return;
 
@@ -53,15 +52,17 @@ void main() {
 
     ivec2 cell = ivec2(idx, idy);
 
-    float t_val = imageLoad(t, cell).r;
+    vec4 uvst = texelFetch(uvst_in, cell, 0);
+    float u_val = uvst.r;
+    float v_val = uvst.g;
+    float s_val = uvst.b;
+    float t_val = uvst.a;
+
     float cooling = (t_val < 0.3) ? smoke_cooling : fire_cooling;
     t_val = max(t_val - cooling, 0.0);
-    imageStore(t, cell, vec4(t_val));
 
-    float v_val = imageLoad(v, cell).r;
     float target_v = t_val * lift;
     v_val += (target_v - v_val) * acceleration;
-    imageStore(v, cell, vec4(v_val));
 
     if (t_val > 0.9 && pc.add_perturbance_probability > 0) {
         float chance = (1.0 - (t_val -0.9) * 10.0) * rand(gl_GlobalInvocationID.xy);
@@ -70,13 +71,9 @@ void main() {
             float v_perb = rand(vec2(gl_GlobalInvocationID.xy + vec2(1, 2)));
             u_perb = (u_perb < 0.333) ? -perb_step : (u_perb > 0.666) ? perb_step : 0.0;
             v_perb = (v_perb < 0.333) ? -perb_step : (v_perb > 0.666) ? perb_step : 0.0;
-            
-            float u_val = imageLoad(u, cell).r;
             u_val += u_perb;
-            imageStore(u, cell, vec4(u_val));
-
             v_val += v_perb;
-            imageStore(v, cell, vec4(v_val));
         }
     }
+    imageStore(uvst_out, cell, vec4(u_val, v_val, s_val, t_val));
 }

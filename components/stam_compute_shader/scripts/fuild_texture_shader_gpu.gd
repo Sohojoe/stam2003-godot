@@ -145,6 +145,14 @@ var div_texture:Texture2DRD
 var div_texture_rid:RID
 var i_texture:Texture2DRD
 var i_texture_rid:RID
+var uvst_texture:Texture2DRD
+var uvst_texture_rid:RID
+var uvst_texture_prev:Texture2DRD
+var uvst_texture_prev_rid:RID
+var divps_texture:Texture2DRD
+var divps_texture_rid:RID
+var divps_texture_prev:Texture2DRD
+var divps_texture_prev_rid:RID
 var sampler_nearest_0:RID
 var sampler_nearest_clamp:RID
 
@@ -209,19 +217,33 @@ func initialize_compute_code(grid_size: int) -> void:
 		shaders[key] = shader
 		pipelines[key] = rd.compute_pipeline_create(shader)
 
-	var fmt3_R32_SFLOAT := RDTextureFormat.new()
-	fmt3_R32_SFLOAT.width = numX
-	fmt3_R32_SFLOAT.height = numY
-	fmt3_R32_SFLOAT.format = RenderingDevice.DATA_FORMAT_R32_SFLOAT
-	fmt3_R32_SFLOAT.usage_bits = \
-			RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
-			RenderingDevice.TEXTURE_USAGE_CAN_UPDATE_BIT | \
-			RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT
+	# var fmt3_R32_SFLOAT := RDTextureFormat.new()
+	# fmt3_R32_SFLOAT.width = numX
+	# fmt3_R32_SFLOAT.height = numY
+	# fmt3_R32_SFLOAT.format = RenderingDevice.DATA_FORMAT_R32_SFLOAT
+	# fmt3_R32_SFLOAT.usage_bits = \
+	# 		RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
+	# 		RenderingDevice.TEXTURE_USAGE_CAN_UPDATE_BIT | \
+	# 		RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT
 	var fmt3_R16_SFLOAT := RDTextureFormat.new()
 	fmt3_R16_SFLOAT.width = numX
 	fmt3_R16_SFLOAT.height = numY
 	fmt3_R16_SFLOAT.format = RenderingDevice.DATA_FORMAT_R16_SFLOAT
 	fmt3_R16_SFLOAT.usage_bits = \
+			RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
+			RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT
+	#var fmt3_R16G16B16_SFLOAT := RDTextureFormat.new()
+	#fmt3_R16G16B16_SFLOAT.width = numX
+	#fmt3_R16G16B16_SFLOAT.height = numY
+	#fmt3_R16G16B16_SFLOAT.format = RenderingDevice.DATA_FORMAT_R16G16B16_SFLOAT
+	#fmt3_R16G16B16_SFLOAT.usage_bits = \
+			#RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
+			#RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT
+	var fmt3_R16G16B16A16_SFLOAT := RDTextureFormat.new()
+	fmt3_R16G16B16A16_SFLOAT.width = numX
+	fmt3_R16G16B16A16_SFLOAT.height = numY
+	fmt3_R16G16B16A16_SFLOAT.format = RenderingDevice.DATA_FORMAT_R16G16B16A16_SFLOAT
+	fmt3_R16G16B16A16_SFLOAT.usage_bits = \
 			RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
 			RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT
 	var fmt3_R8_UNORM := RDTextureFormat.new()
@@ -266,6 +288,18 @@ func initialize_compute_code(grid_size: int) -> void:
 	i_texture_rid = rd.texture_create(fmt3_R8_UNORM, view3)
 	i_texture = Texture2DRD.new()
 	i_texture.texture_rd_rid = i_texture_rid
+	uvst_texture_rid = rd.texture_create(fmt3_R16G16B16A16_SFLOAT, view3)
+	uvst_texture = Texture2DRD.new()
+	uvst_texture.texture_rd_rid = uvst_texture_rid
+	uvst_texture_prev_rid = rd.texture_create(fmt3_R16G16B16A16_SFLOAT, view3)
+	uvst_texture_prev = Texture2DRD.new()
+	uvst_texture_prev.texture_rd_rid = uvst_texture_prev_rid
+	divps_texture_rid = rd.texture_create(fmt3_R16G16B16A16_SFLOAT, view3)
+	divps_texture = Texture2DRD.new()
+	divps_texture.texture_rd_rid = divps_texture_rid
+	divps_texture_prev_rid = rd.texture_create(fmt3_R16G16B16A16_SFLOAT, view3)
+	divps_texture_prev = Texture2DRD.new()
+	divps_texture_prev.texture_rd_rid = divps_texture_prev_rid
 
 	var i_bytes = state
 	rd.texture_update(s_texture_rid, 0, i_bytes)
@@ -337,6 +371,18 @@ func free_previous_resources():
 	if i_texture:
 		rd.free_rid(i_texture_rid)
 		i_texture = null
+	if uvst_texture:
+		rd.free_rid(uvst_texture_rid)
+		uvst_texture = null
+	if uvst_texture_prev:
+		rd.free_rid(uvst_texture_prev_rid)
+		uvst_texture_prev = null
+	if divps_texture:
+		rd.free_rid(divps_texture_rid)
+		divps_texture = null
+	if divps_texture_prev:
+		rd.free_rid(divps_texture_prev_rid)
+		divps_texture_prev = null
 	if sampler_nearest_0:
 		rd.free_rid(sampler_nearest_0)
 	if sampler_nearest_clamp:
@@ -370,11 +416,11 @@ func simulate_stam(dt: float) -> void:
 	# integrate_s(dt, wind)
 	apply_ignition()
 	cool_and_lift(dt)
-	diffuse_uv(dt, num_iters_diffuse)
+	diffuse_uvt(dt, num_iters_diffuse)
 	project_s(num_iters_projection)
 	stam_advect_vel(dt)
 	project_s(num_iters_projection)
-	diffuse_t(dt, num_iters_diffuse)
+	# diffuse_t(dt, num_iters_diffuse)
 	stam_advect_temperature(dt)
 	if not skip_gi_rendering:
 		match di_debug_view:
@@ -415,6 +461,22 @@ func get_uniform_set(values: Array):
 	var uniform_set = rd.uniform_set_create(uniforms, shader, 0)
 	uniform_sets[hashed] = uniform_set
 	return uniform_set
+
+func swap_uvst_buffer():
+	var tmp_rid = uvst_texture_rid
+	uvst_texture_rid = uvst_texture_prev_rid
+	uvst_texture_prev_rid = tmp_rid
+	var tmp_t = uvst_texture
+	uvst_texture = uvst_texture_prev
+	uvst_texture_prev = tmp_t
+
+func swap_divps_buffer():
+	var tmp_rid = divps_texture_rid
+	divps_texture_rid = divps_texture_prev_rid
+	divps_texture_prev_rid = tmp_rid
+	var tmp_t = divps_texture
+	divps_texture = divps_texture_prev
+	divps_texture_prev = tmp_t
 
 func swap_u_buffer():
 	var tmp_rid = u_texture_rid
@@ -480,8 +542,7 @@ func set_square_bnd_uv_open(compute_list):
 	var uniform_set_bnd_uv = get_uniform_set([
 		shader_name_bnd_uv,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		u_texture_rid, 1, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		v_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE])
+		uvst_texture_rid, 1, RenderingDevice.UNIFORM_TYPE_IMAGE])
 	dispatch_square_bounds(compute_list, shader_name_bnd_uv, uniform_set_bnd_uv)
 
 #---- core functions
@@ -507,9 +568,8 @@ func cool_and_lift(dt: float):
 	var uniform_set = get_uniform_set([
 		shader_name,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		u_texture_rid, 1, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		v_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		t_texture_rid, 8, RenderingDevice.UNIFORM_TYPE_IMAGE])
+		[sampler_nearest_0, uvst_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		uvst_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE])
 
 	# Prepare push constants
 	var fseed:float = randf()
@@ -527,50 +587,70 @@ func apply_ignition():
 	var uniform_set = get_uniform_set([
 		shader_name,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		u_texture_rid, 1, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		v_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		t_texture_rid, 8, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		[sampler_nearest_0, i_texture_rid], 11, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
+		[sampler_nearest_0, uvst_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		uvst_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE,
+		[sampler_nearest_0, i_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
 		
 	var compute_list = rd.compute_list_begin()
 	dispatch(compute_list, shader_name, uniform_set)
 	rd.compute_list_end()
 
-func diffuse(read_texture, write_texture, dt:float, diff: float, num_iters:int):
+# uvst_texture
+func diffuse_uvt(dt:float, num_iters:int):
+	var diff = Vector4(diffuse_visc_value, diffuse_visc_value, 0, diffuse_diff_value)  
 	var shader_name = "diffuse"
-	var uniform_set = get_uniform_set([
-		shader_name,
-		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest_clamp, read_texture], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		write_texture, 2, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
-	var pc_bytes := PackedFloat32Array([dt, diff]).to_byte_array()
+	var pc_bytes := PackedVector4Array([diff]).to_byte_array()
+	pc_bytes.append_array(PackedFloat32Array([dt, 010.0000001]).to_byte_array())
 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
 
 	var compute_list = rd.compute_list_begin()
 
 	for k in range(num_iters):
+		swap_uvst_buffer()
+		var uniform_set = get_uniform_set([
+			shader_name,
+			consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+			[sampler_nearest_clamp, uvst_texture_prev_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			uvst_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE])
 		dispatch(compute_list, shader_name, uniform_set, pc_bytes)
+		set_square_bnd_uv_open(compute_list)
 
 	rd.compute_list_end()
 
+# func diffuse(read_texture, write_texture, dt:float, diff: float, num_iters:int):
+# 	var shader_name = "diffuse"
+# 	var uniform_set = get_uniform_set([
+# 		shader_name,
+# 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+# 		[sampler_nearest_clamp, read_texture], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+# 		write_texture, 2, RenderingDevice.UNIFORM_TYPE_IMAGE,
+# 		[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
+# 	var pc_bytes := PackedFloat32Array([dt, diff]).to_byte_array()
+# 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
 
-func diffuse_uv(dt:float, num_iters:int):
-	swap_uv_buffers()
-	diffuse(u_texture_prev_rid, u_texture_rid, dt, diffuse_visc_value, num_iters)
-	var compute_list_u = rd.compute_list_begin()
-	set_square_bnd_uv_open(compute_list_u)
-	rd.compute_list_end()
-	diffuse(v_texture_prev_rid, v_texture_rid, dt, diffuse_visc_value, num_iters)
-	var compute_list = rd.compute_list_begin()
-	set_square_bnd_uv_open(compute_list)
-	rd.compute_list_end()
+# 	var compute_list = rd.compute_list_begin()
+
+# 	for k in range(num_iters):
+# 		dispatch(compute_list, shader_name, uniform_set, pc_bytes)
+
+# 	rd.compute_list_end()
+
+# func diffuse_uv(dt:float, num_iters:int):
+# 	swap_uv_buffers()
+# 	diffuse(u_texture_prev_rid, u_texture_rid, dt, diffuse_visc_value, num_iters)
+# 	var compute_list_u = rd.compute_list_begin()
+# 	set_square_bnd_uv_open(compute_list_u)
+# 	rd.compute_list_end()
+# 	diffuse(v_texture_prev_rid, v_texture_rid, dt, diffuse_visc_value, num_iters)
+# 	var compute_list = rd.compute_list_begin()
+# 	set_square_bnd_uv_open(compute_list)
+# 	rd.compute_list_end()
 
 
-func diffuse_t(dt:float, num_iters:int):
+# func diffuse_t(dt:float, num_iters:int):
 
-	swap_t_buffer()
-	diffuse(t_texture_prev_rid, t_texture_rid, dt, diffuse_diff_value, num_iters)
+# 	swap_t_buffer()
+# 	diffuse(t_texture_prev_rid, t_texture_rid, dt, diffuse_diff_value, num_iters)
 
 
 func project_s(num_iters: int):
@@ -657,7 +737,7 @@ func mark_ignition_changed() -> void:
 
 func view_t():
 	var shader_name = "view_t"
-	view_gpu_texture_shader.material.set_shader_parameter("t_texture", t_texture)	
+	view_gpu_texture_shader.material.set_shader_parameter("uvst_in", uvst_texture)	
 	view_gpu_texture_shader.material.shader = texture_shaders[shader_name]
 
 func view_div():
