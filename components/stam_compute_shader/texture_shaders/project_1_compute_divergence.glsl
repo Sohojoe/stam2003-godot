@@ -15,7 +15,8 @@ layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
 
 layout(set = 0, binding = 1) uniform sampler2D uvst_in;
 // layout(set = 0, binding = 2) uniform sampler2D s;
-layout(set = 0, binding = 3, rgba16f) uniform image2D divps_out;
+layout(set = 0, binding = 3, r16f) uniform image2D p;
+layout(set = 0, binding = 4, r16f) uniform image2D div;
 
 // layout(push_constant, std430) uniform Params {
 //     int _add_params_here;
@@ -34,9 +35,8 @@ void main() {
     vec2 UV = (vec2(cell) + 0.5) * texelSize;
 
     vec4 uvst = texelFetch(uvst_in, cell, 0);
-    vec4 divps = vec4(0.0, 0.0, uvst.z, 0.0);
 
-    bool skip = divps.z == 1.0;
+    bool skip = uvst.z == 1.0;
 
     vec2 cell_l = UV + left * texelSize;
     vec2 cell_r = UV + right * texelSize;
@@ -51,6 +51,7 @@ void main() {
         texture(uvst_in, UV + down * texelSize).y - 
         texture(uvst_in, UV + up * texelSize).y);
 
-    divps.x = skip ? 0 : value;
-    imageStore(divps_out, cell, divps);
+    value = skip ? 0 : value;
+    imageStore(div, cell, vec4(value));
+    imageStore(p, cell, vec4(0.0));
 }

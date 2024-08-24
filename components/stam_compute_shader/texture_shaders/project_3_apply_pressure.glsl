@@ -13,10 +13,9 @@ layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
     float h2;
 } consts;
 
-layout(set = 0, binding = 1) uniform sampler2D divps_in;
+layout(set = 0, binding = 1) uniform sampler2D p;
 layout(set = 0, binding = 2) uniform sampler2D uvst_in;
-// layout(set = 0, binding = 3) uniform sampler2D s;
-layout(set = 0, binding = 4, rgba16f) uniform image2D uvst_out;
+layout(set = 0, binding = 3, rgba16f) uniform image2D uvst_out;
 // --- End Shared Buffer Definition
 
 // layout(push_constant, std430) uniform Params {
@@ -39,8 +38,7 @@ void main() {
     //     return;
     // }
     vec4 uvst = texelFetch(uvst_in, cell, 0);
-    vec4 divps = texelFetch(divps_in, cell, 0);
-    bool skip = divps.z == 1.0;
+    bool skip = uvst.z == 1.0;
 
     vec2 cell_l = UV + left * texelSize;
     vec2 cell_r = UV + right * texelSize;
@@ -50,8 +48,8 @@ void main() {
     // float _h = 1.0 / max(consts.numX, consts.numY);
     float _h = 1.0 / 64;
 
-    uvst.x -= 0.5 * (texture(divps_in, cell_r).y - texture(divps_in, cell_l).y) / _h;
-    uvst.y -= 0.5 * (texture(divps_in, cell_d).y - texture(divps_in, cell_u).y) / _h;
+    uvst.x -= 0.5 * (texture(p, cell_r).r - texture(p, cell_l).r) / _h;
+    uvst.y -= 0.5 * (texture(p, cell_d).r - texture(p, cell_u).r) / _h;
 
     uvst.x = skip ? 0 : uvst.x;
     uvst.y = skip ? 0 : uvst.y;

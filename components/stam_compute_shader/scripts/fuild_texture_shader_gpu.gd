@@ -149,10 +149,6 @@ var uvst_texture:Texture2DRD
 var uvst_texture_rid:RID
 var uvst_texture_prev:Texture2DRD
 var uvst_texture_prev_rid:RID
-var divps_texture:Texture2DRD
-var divps_texture_rid:RID
-var divps_texture_prev:Texture2DRD
-var divps_texture_prev_rid:RID
 var sampler_nearest_0:RID
 var sampler_nearest_clamp:RID
 
@@ -294,12 +290,6 @@ func initialize_compute_code(grid_size: int) -> void:
 	uvst_texture_prev_rid = rd.texture_create(fmt3_R16G16B16A16_SFLOAT, view3)
 	uvst_texture_prev = Texture2DRD.new()
 	uvst_texture_prev.texture_rd_rid = uvst_texture_prev_rid
-	divps_texture_rid = rd.texture_create(fmt3_R16G16B16A16_SFLOAT, view3)
-	divps_texture = Texture2DRD.new()
-	divps_texture.texture_rd_rid = divps_texture_rid
-	divps_texture_prev_rid = rd.texture_create(fmt3_R16G16B16A16_SFLOAT, view3)
-	divps_texture_prev = Texture2DRD.new()
-	divps_texture_prev.texture_rd_rid = divps_texture_prev_rid
 
 	var i_bytes = state
 	rd.texture_update(s_texture_rid, 0, i_bytes)
@@ -377,12 +367,6 @@ func free_previous_resources():
 	if uvst_texture_prev:
 		rd.free_rid(uvst_texture_prev_rid)
 		uvst_texture_prev = null
-	if divps_texture:
-		rd.free_rid(divps_texture_rid)
-		divps_texture = null
-	if divps_texture_prev:
-		rd.free_rid(divps_texture_prev_rid)
-		divps_texture_prev = null
 	if sampler_nearest_0:
 		rd.free_rid(sampler_nearest_0)
 	if sampler_nearest_clamp:
@@ -467,14 +451,6 @@ func swap_uvst_buffer():
 	var tmp_t = uvst_texture
 	uvst_texture = uvst_texture_prev
 	uvst_texture_prev = tmp_t
-
-func swap_divps_buffer():
-	var tmp_rid = divps_texture_rid
-	divps_texture_rid = divps_texture_prev_rid
-	divps_texture_prev_rid = tmp_rid
-	var tmp_t = divps_texture
-	divps_texture = divps_texture_prev
-	divps_texture_prev = tmp_t
 
 func swap_u_buffer():
 	var tmp_rid = u_texture_rid
@@ -626,19 +602,21 @@ func project_s(num_iters: int):
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
 		[sampler_nearest_clamp, uvst_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 		#[sampler_nearest_0, s_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		divps_texture_rid, 3, RenderingDevice.UNIFORM_TYPE_IMAGE])
+		p_texture_rid, 3, RenderingDevice.UNIFORM_TYPE_IMAGE,
+		div_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
 	dispatch(compute_list, shader_name_div, uniform_set_div)
 
 	# Solve pressure iterations
 	for k in range(num_iters):
-		swap_divps_buffer()
+		swap_p_buffer()
 		var shader_name_p = "project_solve_pressure"
 		var uniform_set_p = get_uniform_set([
 			shader_name_p,
 				consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-				[sampler_nearest_clamp, divps_texture_prev_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-					#[sampler_nearest_0, s_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-				divps_texture_rid, 3, RenderingDevice.UNIFORM_TYPE_IMAGE])
+				[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+				p_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
+				[sampler_nearest_clamp, div_texture_rid], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+				[sampler_nearest_clamp, p_texture_prev_rid], 10, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
 		dispatch(compute_list, shader_name_p, uniform_set_p)
 
 	# Apply pressure gradient
@@ -646,10 +624,9 @@ func project_s(num_iters: int):
 	var uniform_set_apply_p = get_uniform_set([
 		shader_name_apply_p,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest_clamp, divps_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_clamp, p_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 		[sampler_nearest_clamp, uvst_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		#[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		uvst_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
+		uvst_texture_rid, 3, RenderingDevice.UNIFORM_TYPE_IMAGE])
 	dispatch(compute_list, shader_name_apply_p, uniform_set_apply_p)
 	set_square_bnd_uv_open(compute_list)
 
