@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://c5h5km1atghwi"
+path="res://.godot/imported/apply_ignition.glsl-6cfcb31e71b0c08b85670e591037b90a.res"
+
+[deps]
+
+source_file="res://components/stam_3d_compute_shader/texture_shaders/apply_ignition.glsl"
+dest_files=["res://.godot/imported/apply_ignition.glsl-6cfcb31e71b0c08b85670e591037b90a.res"]
+
+[params]
+

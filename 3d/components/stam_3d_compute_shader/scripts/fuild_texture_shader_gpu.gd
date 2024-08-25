@@ -34,25 +34,25 @@ var c_scale = 1.0
 var camera: Camera2D = null
 
 var shader_file_names = {
-	# "apply_force": "res://components/stam_compute_shader/texture_shaders/apply_force.glsl",
-	"diffuse": "res://components/stam_compute_shader/texture_shaders/diffuse.glsl",
-	"advect": "res://components/stam_compute_shader/texture_shaders/advect.glsl",
-	"project_compute_divergence": "res://components/stam_compute_shader/texture_shaders/project_1_compute_divergence.glsl",
-	"project_solve_pressure": "res://components/stam_compute_shader/texture_shaders/project_2_solve_pressure.glsl",
-	"project_apply_pressure": "res://components/stam_compute_shader/texture_shaders/project_3_apply_pressure.glsl",
-	"cool_and_lift": "res://components/stam_compute_shader/texture_shaders/cool_and_lift.glsl",
-	"apply_ignition": "res://components/stam_compute_shader/texture_shaders/apply_ignition.glsl",
-	"set_square_bnd_uv_open": "res://components/stam_compute_shader/texture_shaders/set_square_bnd_uv_open.glsl",
-	"view_t": "res://components/stam_compute_shader/texture_shaders/view_t.glsl",
-	"view_div": "res://components/stam_compute_shader/texture_shaders/view_div.glsl",
-	"view_p": "res://components/stam_compute_shader/texture_shaders/view_p.glsl",
-	"view_uv": "res://components/stam_compute_shader/texture_shaders/view_uv.glsl",
+	# "apply_force": "res://components/stam_3d_compute_shader/texture_shaders/apply_force.glsl",
+	"diffuse": "res://components/stam_3d_compute_shader/texture_shaders/diffuse.glsl",
+	"advect": "res://components/stam_3d_compute_shader/texture_shaders/advect.glsl",
+	"project_compute_divergence": "res://components/stam_3d_compute_shader/texture_shaders/project_1_compute_divergence.glsl",
+	"project_solve_pressure": "res://components/stam_3d_compute_shader/texture_shaders/project_2_solve_pressure.glsl",
+	"project_apply_pressure": "res://components/stam_3d_compute_shader/texture_shaders/project_3_apply_pressure.glsl",
+	"cool_and_lift": "res://components/stam_3d_compute_shader/texture_shaders/cool_and_lift.glsl",
+	"apply_ignition": "res://components/stam_3d_compute_shader/texture_shaders/apply_ignition.glsl",
+	"set_square_bnd_uv_open": "res://components/stam_3d_compute_shader/texture_shaders/set_square_bnd_uv_open.glsl",
+	"view_t": "res://components/stam_3d_compute_shader/texture_shaders/view_t.glsl",
+	"view_div": "res://components/stam_3d_compute_shader/texture_shaders/view_div.glsl",
+	"view_p": "res://components/stam_3d_compute_shader/texture_shaders/view_p.glsl",
+	"view_uv": "res://components/stam_3d_compute_shader/texture_shaders/view_uv.glsl",
 }
 var texture_shader_file_names = {
-	#"view_t": "res://components/stam_compute_shader/texture_shaders/view_t.gdshader",
-	#"view_p": "res://components/stam_compute_shader/texture_shaders/view_p.gdshader",
-	#"view_div": "res://components/stam_compute_shader/texture_shaders/view_div.gdshader",
-	#"view_uv": "res://components/stam_compute_shader/texture_shaders/view_uv.gdshader",
+	#"view_t": "res://components/stam_3d_compute_shader/texture_shaders/view_t.gdshader",
+	#"view_p": "res://components/stam_3d_compute_shader/texture_shaders/view_p.gdshader",
+	#"view_div": "res://components/stam_3d_compute_shader/texture_shaders/view_div.gdshader",
+	#"view_uv": "res://components/stam_3d_compute_shader/texture_shaders/view_uv.gdshader",
 }
 func _ready():
 	camera = find_camera(get_tree().current_scene)

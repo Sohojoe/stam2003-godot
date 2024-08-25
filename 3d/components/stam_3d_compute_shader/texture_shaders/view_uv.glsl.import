@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://ddk0mw8j52kpu"
+path="res://.godot/imported/view_uv.glsl-011b87b1d9ea6f89731184e19e635060.res"
+
+[deps]
+
+source_file="res://components/stam_3d_compute_shader/texture_shaders/view_uv.glsl"
+dest_files=["res://.godot/imported/view_uv.glsl-011b87b1d9ea6f89731184e19e635060.res"]
+
+[params]
+

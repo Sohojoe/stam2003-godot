@@ -1,6 +1,0 @@
-[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://b1g7kww3p0gxc"]
-
-[ext_resource type="Shader" uid="uid://dscfwogv6p8e1" path="res://components/stam_compute_shader/render_shaders/fire.tres" id="1_37b44"]
-
-[resource]
-shader = ExtResource("1_37b44")

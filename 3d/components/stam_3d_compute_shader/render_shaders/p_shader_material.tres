@@ -1,6 +1,6 @@
 [gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://bualklk57qe7i"]
 
-[ext_resource type="Shader" uid="uid://cfp54o317ypfw" path="res://components/stam_compute_shader/render_shaders/p.tres" id="1_t6m7x"]
+[ext_resource type="Shader" uid="uid://cfp54o317ypfw" path="res://components/stam_3d_compute_shader/render_shaders/p.tres" id="1_t6m7x"]
 
 [resource]
 shader = ExtResource("1_t6m7x")

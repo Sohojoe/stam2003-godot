@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://ceifinauopv7g"
+path="res://.godot/imported/cool_and_lift.glsl-31a6a8ca371172b58247299e232bf894.res"
+
+[deps]
+
+source_file="res://components/stam_3d_compute_shader/texture_shaders/cool_and_lift.glsl"
+dest_files=["res://.godot/imported/cool_and_lift.glsl-31a6a8ca371172b58247299e232bf894.res"]
+
+[params]
+

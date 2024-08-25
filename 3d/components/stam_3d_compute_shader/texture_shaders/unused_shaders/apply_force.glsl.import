@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://cbmo5wmrmv4nf"
+path="res://.godot/imported/apply_force.glsl-323a8b9b548ba4386e65c6e16fce8d86.res"
+
+[deps]
+
+source_file="res://components/stam_3d_compute_shader/texture_shaders/unused_shaders/apply_force.glsl"
+dest_files=["res://.godot/imported/apply_force.glsl-323a8b9b548ba4386e65c6e16fce8d86.res"]
+
+[params]
+
