@@ -3,6 +3,9 @@
 ### abstract
 'Real-Time Fluid Dynamics for Games' (Stam 2003) - was published 20 years ago. the goal of this repo was to explore the scope of scale on todays hardware vs 2003
 
+![fire](images/007_squareb.gif)
+
+
 ### results
 using flops as a measure, i found todays hardware getting ~15% of its theortical throughput. i put this down to cache misses and the challenges with getting theortitical throughput in real worl scenarios with todays gpu hardware. this is afer many optimizations (shaders, 16bit, SMIT, combining textures). 
 
