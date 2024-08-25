@@ -1,5 +1,24 @@
 # stam2003-godot
- lets implment Real-Time Fluid Dynamics for Games, Stam 2003
+
+### abstract
+'Real-Time Fluid Dynamics for Games' (Stam 2003) - was published 20 years ago. the goal of this repo was to explore the scope of scale on todays hardware vs 2003
+
+### results
+using flops as a measure, i found todays hardware getting ~15% of its theortical throughput. i put this down to cache misses and the challenges with getting theortitical throughput in real worl scenarios with todays gpu hardware. this is afer many optimizations (shaders, 16bit, SMIT, combining textures). 
+
+| | GFLOPS | multiple | cells | 2d | 3d | | actual 2d | actual multiple |
+|-|-|-|-|-|-|-|-|-|
+| p4 3.2gz | 0.773 | 1 |  4,096 | 64 | n/a | | 64
+| 2023 MacBook Pro m3 | 16,400 | 22,373x | 92m | 9,572 | -- | | 4096 | 4096x (18%)
+| 2022 RTX 4090 | 82,580 | 112,660x | 461m | 21,481 | -- | | 8192 | 16,384x (15%)
+| 20 years of 2x every 2y | 791 | 1024x | 4.2m | 2,048 | --
+| 20 years of 2x every 1.5y | 7978 | 10,321x | 42m | 6,501 | --
+
+-----
+
+## detailed results
+
+these are results from each optimization, see branches for different code implementations
 
 
 ### 007 combine textures
