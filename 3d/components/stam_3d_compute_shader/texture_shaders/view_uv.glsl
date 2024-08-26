@@ -1,19 +1,22 @@
 #[compute]
 #version 450
 
-layout(local_size_x = 16, local_size_y = 16) in;
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 // --- Begin Shared Buffer Definition
 layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
     uint numX;
     uint numY;
+    uint numZ;
     uint viewX;
     uint viewY;
+    uint viewZ;
     float h;
     float h2;
 } consts;
 
-layout(set = 0, binding = 1) uniform sampler2D uvst_in;
+
+layout(set = 0, binding = 1) uniform sampler2D uvwt_in;
 layout(set = 0, binding = 2,rgba32f) writeonly uniform image2D output_image;
 
 
@@ -36,8 +39,8 @@ void main() {
     vec2 texelSize = 1.0 / vec2(consts.viewX, consts.viewY);
     vec2 UV = (vec2(cell) + 0.5) * texelSize;
 
-    float u_val = texture(uvst_in, UV).x; 
-    float v_val = texture(uvst_in, UV).y; 
+    float u_val = texture(uvwt_in, UV).x; 
+    float v_val = texture(uvwt_in, UV).y; 
 	u_val = min(u_val / pc.color_scale, 1.);
 	v_val = min(v_val / pc.color_scale, 1.);
 

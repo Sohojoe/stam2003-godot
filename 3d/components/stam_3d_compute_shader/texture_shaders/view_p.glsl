@@ -1,17 +1,20 @@
 #[compute]
 #version 450
 
-layout(local_size_x = 16, local_size_y = 16) in;
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 // --- Begin Shared Buffer Definition
 layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
     uint numX;
     uint numY;
+    uint numZ;
     uint viewX;
     uint viewY;
+    uint viewZ;
     float h;
     float h2;
 } consts;
+
 
 layout(set = 0, binding = 1) uniform sampler2D p;
 layout(set = 0, binding = 2,rgba32f) writeonly uniform image2D output_image;
