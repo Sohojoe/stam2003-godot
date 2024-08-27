@@ -37,7 +37,8 @@ void main() {
 
     if (texelFetch(i, cell, 0).r == 1.0) {
         vec4 uvwt = texture(uvwt_in, UVW);
-        uvwt.a = 1.0;
+        // uvwt.a = 1.0;
+        uvwt = vec4(0.0, 0.0, 0.0, 1.0);
         imageStore(uvwt_out, cell, uvwt);
     }
 }

@@ -97,8 +97,9 @@ func handle_ignition_cpu():
 	# var campfire_end = int((numX/2.)+numX/2.*campfire_width)
 	var campfire_start = int((numX/2.)-64/2.*campfire_width)
 	var campfire_end = int((numX/2.)+64/2.*campfire_width)	
-	for depth in range(campfire_start, campfire_end):
+	# for depth in range(campfire_start, campfire_end):
 	#for depth in range((numZ/2)-1, (numZ/2)+3):
+	for depth in range((numZ/2), (numZ/2)+1):
 		for row in range(1, 1+campfire_height):
 			for col in range(campfire_start, campfire_end):
 				ignition[(depth * numY * numZ) + (row * numY) + col] = 255
@@ -512,7 +513,7 @@ func dispatch_square_bounds(compute_list, shader_name, uniform_set, pc_bytes=nul
 	rd.compute_list_bind_uniform_set(compute_list, uniform_set, 0)
 	if pc_bytes:
 		rd.compute_list_set_push_constant(compute_list, pc_bytes, pc_bytes.size())
-	rd.compute_list_dispatch(compute_list, int(ceil(numX / 16.0)), 1, 1)
+	rd.compute_list_dispatch(compute_list, int(ceil(numX / 16.0)), int(ceil(numY / 16.0)), 6)
 
 func dispatch_view(compute_list, shader_name, uniform_set, pc_bytes=null):
 	rd.compute_list_bind_compute_pipeline(compute_list, pipelines[shader_name])
