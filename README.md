@@ -12,16 +12,22 @@ using flops as a measure, i found todays hardware getting ~15% of its theortical
 | | GFLOPS | multiple | cells | 2d | 3d | | actual 2d | actual multiple |
 |-|-|-|-|-|-|-|-|-|
 | p4 3.2gz | 0.773 | 1 |  4,096 | 64 | n/a | | 64
-| 2023 MacBook Pro m3 | 16,400 | 22,373x | 92m | 9,572 | -- | | 4096 | 4096x (18%)
-| 2022 RTX 4090 | 82,580 | 112,660x | 461m | 21,481 | -- | | 8192 | 16,384x (15%)
-| 20 years of 2x every 2y | 791 | 1024x | 4.2m | 2,048 | --
-| 20 years of 2x every 1.5y | 7978 | 10,321x | 42m | 6,501 | --
+| 2023 MacBook Pro m3 | 16,400 | 22,373x | 92m | 9,572 | 450 | | 4096 | 4096x (18%)
+| 2022 RTX 4090 | 82,580 | 112,660x | 461m | 21,481 | 772 | | 8192 | 16,384x (15%)
+| 20 years of 2x every 2y | 791 | 1024x | 4.2m | 2,048 | 161
+| 20 years of 2x every 1.5y | 7978 | 10,321x | 42m | 6,501 | 348
 
 -----
 
 ## detailed results
 
 these are results from each optimization, see branches for different code implementations
+
+### 3d
+| | 64 | 128 | 200| 256 | 400 | 512 | 1024 | 
+|-|-|-|-|-|-|-|-|
+|M3| 1303 | 184 | 49 | 24 | 6 | 3 | <1 | 
+|4090| 4480 | 1092 | 290 |142 | 37 | 11 | crash | 
 
 
 ### 007 combine textures

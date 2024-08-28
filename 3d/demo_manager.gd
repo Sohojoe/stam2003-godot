@@ -6,7 +6,9 @@ var fire_gpu_texture_shader: FluidTextureShaderGpu
 var grid_sizes = [
 	pow(2,6), #64
 	pow(2,7), #128
+	200,
 	pow(2,8), #256
+	400,
 	pow(2,9), #512
 	pow(2,10), #1024
 	pow(2,11), #2048
