@@ -40,10 +40,11 @@ func handle_input():
 		cycle_grid_size()
 	if Input.is_action_just_pressed("cycle_debug_view"):
 		cycle_debug_view()
-	if Input.is_action_pressed("debug_view"):
-		fire_gpu_texture_shader.di_debug_view = debug_view
-	else:
-		fire_gpu_texture_shader.di_debug_view = 0
+	if Input.is_action_just_pressed("debug_view"):
+		if fire_gpu_texture_shader.di_debug_view != debug_view:
+			fire_gpu_texture_shader.di_debug_view = debug_view
+		else:
+			fire_gpu_texture_shader.di_debug_view = 0
 	if Input.is_action_just_pressed("restart"):
 		fire_gpu_texture_shader.restart()
 	if Input.is_action_just_pressed("toggle_view"):
@@ -95,3 +96,4 @@ func cycle_debug_view():
 	debug_view += 1
 	if debug_view > 3:
 		debug_view = 1
+	fire_gpu_texture_shader.di_debug_view = debug_view

@@ -6,7 +6,7 @@ extends Node2D
 @export var skip_gi_rendering: bool = false
 @export_range(0, 3, .1) var di_debug_view: int = 0
 @export_range(0.0, 1.0) var debug_div_color_scale: float = 0.0009
-@export_range(0.0, 0.010) var debug_p_color_scale: float = 0.0003
+@export_range(0.0, 0.010) var debug_p_color_scale: float = 0.0013
 @export_range(0.0, 0.30) var debug_uv_color_scale: float = 0.07
 # ---- config
 @export var grid_size_n:int = 64

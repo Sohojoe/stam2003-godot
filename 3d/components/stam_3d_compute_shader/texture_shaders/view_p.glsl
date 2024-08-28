@@ -16,7 +16,7 @@ layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
 } consts;
 
 
-layout(set = 0, binding = 1) uniform sampler2D p;
+layout(set = 0, binding = 1) uniform sampler3D p;
 layout(set = 0, binding = 2,rgba32f) writeonly uniform image2D output_image;
 
 
@@ -35,24 +35,41 @@ vec3 hsv2rgb(vec3 c) {
 }
 
 void main() {
-    ivec2 cell = ivec2(gl_GlobalInvocationID.xy);
-    vec2 texelSize = 1.0 / vec2(consts.viewX, consts.viewY);
-    vec2 UV = (vec2(cell) + 0.5) * texelSize;
+    ivec3 cell = ivec3(gl_GlobalInvocationID.xyz);
+    vec3 texelSize = 1.0 / vec3(consts.viewX, consts.viewY, consts.viewZ);
+    vec3 UVW = (vec3(cell) + 0.5) * texelSize;
+    vec3 input_texelSize = 1.0 / vec3(consts.numX, consts.numY, consts.numZ);
+    UVW.z = (consts.numZ - 1 + 0.5) * input_texelSize.z;
 
-    float p = texture(p, UV).r; 
-	p = min(p / pc.color_scale, 1.);
+    float r = 0.;
+    float g = 0.;
+    float b = 0.;
+    vec4 finalColor = vec4(0., 0., 0., 1.);
 
-    // Calculate magnitude and direction
-    float magnitude = sqrt(p * p + p * p);
-    float direction = atan(p, p);  // Range from -PI to PI
+    for (int z = 0; z < int(consts.numZ) - 1; z++) {
+        float p = texture(p, UVW).r; 
+        p = min(p / pc.color_scale, 1.);
 
-    // Normalize direction to [0, 1] range for hue
-    float hue = (direction + PI) / (2.0 * PI);
-    float saturation = 1.0;
-    float value = magnitude;  // Assuming magnitude is already normalized, otherwise, you may need to normalize it
+        // // Calculate magnitude and direction
+        // float magnitude = sqrt(p * p + p * p);
+        // float direction = atan(p, p);  // Range from -PI to PI
 
-    // Convert HSV to RGB
-    vec3 rgb = hsv2rgb(vec3(hue, saturation, value));
-    vec4 color = vec4(rgb, 1.0);
-    imageStore(output_image, cell, color);
+        // // Normalize direction to [0, 1] range for hue
+        // float hue = (direction + PI) / (2.0 * PI);
+        // float saturation = 1.0;
+        // float value = magnitude;  // Assuming magnitude is already normalized, otherwise, you may need to normalize it
+
+        // // Convert HSV to RGB
+        // finalColor.rgb += hsv2rgb(vec3(hue, saturation, value));
+        if (p < 0.0) {
+            r = 0.0; g = -p; b = 0.0;
+        } else {
+            r = p; g = 0.0; b = p;  //  positive divergence
+        }
+        finalColor.rgb += vec3(r, g, b);
+        UVW.z -= input_texelSize.z;        
+    }
+
+    finalColor = clamp(finalColor, 0.0, 1.0);
+    imageStore(output_image, cell.xy, finalColor);
 }

@@ -37,7 +37,6 @@ void main() {
     float g = 0.;
     float b = 0.;
     vec4 finalColor = vec4(0., 0., 0., 1.);
-    vec4 add_color = vec4(0.0);
 
     for (int z = 0; z < int(consts.numZ) - 1; z++) {
         float div = texture(div, UVW).r; 

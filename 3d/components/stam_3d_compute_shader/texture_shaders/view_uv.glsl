@@ -16,7 +16,7 @@ layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
 } consts;
 
 
-layout(set = 0, binding = 1) uniform sampler2D uvwt_in;
+layout(set = 0, binding = 1) uniform sampler3D uvwt_in;
 layout(set = 0, binding = 2,rgba32f) writeonly uniform image2D output_image;
 
 
@@ -35,26 +35,38 @@ vec3 hsv2rgb(vec3 c) {
 }
 
 void main() {
-    ivec2 cell = ivec2(gl_GlobalInvocationID.xy);
-    vec2 texelSize = 1.0 / vec2(consts.viewX, consts.viewY);
-    vec2 UV = (vec2(cell) + 0.5) * texelSize;
+    ivec3 cell = ivec3(gl_GlobalInvocationID.xyz);
+    vec3 texelSize = 1.0 / vec3(consts.viewX, consts.viewY, consts.viewZ);
+    vec3 UVW = (vec3(cell) + 0.5) * texelSize;
+    vec3 input_texelSize = 1.0 / vec3(consts.numX, consts.numY, consts.numZ);
+    UVW.z = (consts.numZ - 1 + 0.5) * input_texelSize.z;
 
-    float u_val = texture(uvwt_in, UV).x; 
-    float v_val = texture(uvwt_in, UV).y; 
-	u_val = min(u_val / pc.color_scale, 1.);
-	v_val = min(v_val / pc.color_scale, 1.);
+    vec4 finalColor = vec4(0., 0., 0., 1.);
 
-    // Calculate magnitude and direction
-    float magnitude = sqrt(u_val * u_val + v_val * v_val);
-    float direction = atan(v_val, u_val);  // Range from -PI to PI
+    for (int z = 0; z < int(consts.numZ) - 1; z++) {
+        // float u_val = texture(uvwt_in, UVW).x; 
+        // float v_val = texture(uvwt_in, UVW).y; 
+        // u_val = min(u_val / pc.color_scale, 1.);
+        // v_val = min(v_val / pc.color_scale, 1.);
 
-    // Normalize direction to [0, 1] range for hue
-    float hue = (direction + PI) / (2.0 * PI);
-    float saturation = 1.0;
-    float value = magnitude;  // Assuming magnitude is already normalized, otherwise, you may need to normalize it
+        // // Calculate magnitude and direction
+        // float magnitude = sqrt(u_val * u_val + v_val * v_val);
+        // float direction = atan(v_val, u_val);  // Range from -PI to PI
 
-    // Convert HSV to RGB
-    vec3 rgb = hsv2rgb(vec3(hue, saturation, value));
-    vec4 color = vec4(rgb, 1.0);
-    imageStore(output_image, cell, color);
+        // // Normalize direction to [0, 1] range for hue
+        // float hue = (direction + PI) / (2.0 * PI);
+        // float saturation = 1.0;
+        // float value = magnitude;  // Assuming magnitude is already normalized, otherwise, you may need to normalize it
+
+        // // Convert HSV to RGB
+        // finalColor.rgb += hsv2rgb(vec3(hue, saturation, value));
+        vec3 uvw = texture(uvwt_in, UVW).xyz;
+        uvw = min(uvw / pc.color_scale, 1.);
+        // finalColor.rgb += hsv2rgb(vec3(uvw.x, 1., uvw.z));
+        finalColor.rgb += uvw;
+    }
+    finalColor = clamp(finalColor, -1.0, 1.0);
+    finalColor.rgb += 1.;
+    finalColor.rgb *= 0.5;
+    imageStore(output_image, cell.xy, finalColor);
 }
