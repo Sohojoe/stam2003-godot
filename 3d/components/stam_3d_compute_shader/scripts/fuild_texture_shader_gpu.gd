@@ -5,7 +5,7 @@ extends Node2D
 # ---- global illimination values
 @export var skip_gi_rendering: bool = false
 @export_range(0, 3, .1) var di_debug_view: int = 0
-@export_range(0.0, 1.0) var debug_div_color_scale: float = 0.0002
+@export_range(0.0, 1.0) var debug_div_color_scale: float = 0.0009
 @export_range(0.0, 0.010) var debug_p_color_scale: float = 0.0003
 @export_range(0.0, 0.30) var debug_uv_color_scale: float = 0.07
 # ---- config
@@ -703,7 +703,7 @@ func view_div():
 		shader_name_div,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
 		[sampler_nearest_clamp, uvwt_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		#[sampler_nearest_0, s_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_0, s_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 		p_texture_rid, 3, RenderingDevice.UNIFORM_TYPE_IMAGE,
 		div_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
 	dispatch(compute_list, shader_name_div, uniform_set_div)
