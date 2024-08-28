@@ -163,13 +163,15 @@ void main() {
         // Back-to-front blending with proper opacity accumulation
         add_smoke.rgb = color.rgb * color.a + finalColor.rgb * (1.0 - color.a);
         add_smoke.a = color.a + finalColor.a * (1.0 - color.a);
-        if (max_temp < 0.5) {
-            finalColor = add_smoke;
-            // max_temp = 0;
-        } else if (temp > max_temp) {
-            finalColor = color;
-            max_temp = temp;
-        }
+        // if (max_temp < 0.5) {
+        //     finalColor = add_smoke;
+        //     // max_temp = 0;
+        // } else if (temp > max_temp) {
+        //     finalColor = color;
+        //     max_temp = temp;
+        // }
+        finalColor = max_temp < 0.5 ? add_smoke : temp > max_temp ? color : finalColor;
+        max_temp = temp > max_temp ? temp : max_temp;
 
         finalColor = clamp(finalColor, 0.0, 1.0);
         UVW.z -= input_texelSize.z;
