@@ -95,14 +95,23 @@ func handle_ignition_cpu():
 	ignition.fill(0) # Note: this is not efficient, lol
 	# var campfire_start = int((numX/2.)-numX/2.*campfire_width)
 	# var campfire_end = int((numX/2.)+numX/2.*campfire_width)
+	var center_x = int(numX / 2.0)
+	var center_z = int(numZ / 2.0)
+	var radius = (64 * campfire_width) / 2
+
 	var campfire_start = int((numX/2.)-64/2.*campfire_width)
 	var campfire_end = int((numX/2.)+64/2.*campfire_width)	
-	# for depth in range(campfire_start, campfire_end):
-	#for depth in range((numZ/2)-1, (numZ/2)+3):
-	for depth in range((numZ/2), (numZ/2)+1):
+	#for depth in range(campfire_start, campfire_end):
+	for depth in range(center_z, center_z+1):
 		for row in range(1, 1+campfire_height):
 			for col in range(campfire_start, campfire_end):
-				ignition[(depth * numY * numZ) + (row * numY) + col] = 255
+			#for col in range(center_x, center_x+1):
+				var dx = col - center_x
+				var dz = depth - center_z
+				var distance = sqrt(dx * dx + dz * dz)
+				
+				if distance <= radius:
+					ignition[(depth * numY * numZ) + (row * numY) + col] = 255
 	RenderingServer.call_on_render_thread(mark_ignition_changed)
 
 func restart():
@@ -187,7 +196,7 @@ func initialize_compute_code(grid_size: int) -> void:
 
 	var view_texture_size = view_gpu_texture_shader.view_texture_size
 
-	var consts_buffer_bytes := PackedInt32Array([numX, numY, numZ, view_texture_size, view_texture_size, 1]).to_byte_array()
+	var consts_buffer_bytes := PackedInt32Array([numX, numY, numZ, view_texture_size, view_texture_size, view_texture_size]).to_byte_array()
 	consts_buffer_bytes.append_array(PackedFloat32Array([h, h2]).to_byte_array())
 	consts_buffer_bytes.resize(ceil(consts_buffer_bytes.size() / 16.0) * 16)
 	consts_buffer = rd.storage_buffer_create(consts_buffer_bytes.size(), consts_buffer_bytes)
@@ -520,8 +529,8 @@ func dispatch_view(compute_list, shader_name, uniform_set, pc_bytes=null):
 	rd.compute_list_bind_uniform_set(compute_list, uniform_set, 0)
 	if pc_bytes:
 		rd.compute_list_set_push_constant(compute_list, pc_bytes, pc_bytes.size())
-	var xsteps = int(ceil(view_gpu_texture_shader.view_texture_size / 8.0))
-	var ysteps = int(ceil(view_gpu_texture_shader.view_texture_size / 8.0))
+	var xsteps = int(ceil(view_gpu_texture_shader.view_texture_size / 16.0))
+	var ysteps = int(ceil(view_gpu_texture_shader.view_texture_size / 16.0))
 	rd.compute_list_dispatch(compute_list, xsteps, ysteps, 1)
 
 func set_square_bnd_uv_open(compute_list):
@@ -673,12 +682,14 @@ func mark_ignition_changed() -> void:
 
 func view_t():
 	var shader_name = "view_t"
+	var sample_mode = sampler_nearest_0
+	#var sample_mode = sampler_linear_clamp
 	var compute_list = rd.compute_list_begin()
 	var uniform_set = get_uniform_set([
 		shader_name,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest_0, uvwt_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		#[sampler_nearest_0, i_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sample_mode, uvwt_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		#[sample_mode, i_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 		view_gpu_texture_shader.view_texture, 2, RenderingDevice.UNIFORM_TYPE_IMAGE],
 		)
 	dispatch_view(compute_list, shader_name, uniform_set)
