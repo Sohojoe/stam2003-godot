@@ -11,7 +11,7 @@ extends Node2D
 # ---- config
 @export var grid_size_n:int = 64
 # ---- params
-@export_range(0.0, 1.0) var campfire_width: float = .2
+@export_range(0.0, 1.0) var campfire_width: float = .75
 @export_range(1, 20, .1) var campfire_height: int = 2
 @export_range(0.0, 1.0) var add_perturbance_probability: float = .2
 @export var num_iters_projection: int = 20

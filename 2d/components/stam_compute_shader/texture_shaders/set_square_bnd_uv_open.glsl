@@ -35,12 +35,12 @@ void main() {
     imageStore(uvst, ivec2(num_cells_x, i), val);
     // top
     val = imageLoad(uvst, ivec2(i, 1));
-    // val.g = val.g < 0 ? val.g : 0;
+    val.g = val.g < 0 ? val.g : 0;
     // var.b = 0.0; // set boundary state to 0
     imageStore(uvst, ivec2(i, 0), val);
     // bottom
     val = imageLoad(uvst, ivec2(i, num_cells_y - 1));
-    // val.g = val.g > 0 ? val.g : 0;
+    val.g = val.g > 0 ? val.g : 0;
     // var.b = 0.0; // set boundary state to 0
     imageStore(uvst, ivec2(i, num_cells_y), val);
     // corners
