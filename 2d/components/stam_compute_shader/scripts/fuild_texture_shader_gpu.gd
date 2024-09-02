@@ -16,11 +16,11 @@ extends Node2D
 @export_range(0.0, 1.0) var add_perturbance_probability: float = .2
 @export var num_iters_projection: int = 20
 @export var num_iters_diffuse: int = 20
-@export var diffuse_visc_value: float = .00001
+@export var diffuse_visc_value: float = .00003
 @export var diffuse_diff_value: float = .00001
 @export var wind: Vector2 = Vector2.ZERO
 @export var min_dt: float = 1.0 / 60.0
-@export var max_dt: float = 1.0 / 120.0
+@export var max_dt: float = 1.0 / 60.0 # TODO: debug why variable dt does not produce correct results
 @export var paused: bool = false
 # ---- 
 
@@ -399,7 +399,7 @@ func simulate_stam(dt: float) -> void:
 	#--- GPU work
 	handle_ignition_gpu()
 	# integrate_s(dt, wind)
-	apply_ignition()
+	# apply_ignition() # already called in cool_and_lift
 	cool_and_lift(dt)
 	diffuse_uvt(dt, num_iters_diffuse)
 	project_s(num_iters_projection)
@@ -554,10 +554,11 @@ func cool_and_lift(dt: float):
 		
 	var compute_list = rd.compute_list_begin()
 	dispatch(compute_list, shader_name, uniform_set, pc_bytes)
-	#set_square_bnd_uv_open(compute_list)
+	apply_ignition(compute_list)
+	set_square_bnd_uv_open(compute_list)
 	rd.compute_list_end()
 
-func apply_ignition():
+func apply_ignition(compute_list):
 	var shader_name = "apply_ignition"
 	var uniform_set = get_uniform_set([
 		shader_name,
@@ -566,9 +567,9 @@ func apply_ignition():
 		uvst_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE,
 		[sampler_nearest_0, i_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
 		
-	var compute_list = rd.compute_list_begin()
+	#var compute_list = rd.compute_list_begin()
 	dispatch(compute_list, shader_name, uniform_set)
-	rd.compute_list_end()
+	#rd.compute_list_end()
 
 # uvst_texture
 func diffuse_uvt(dt:float, num_iters:int):
@@ -588,7 +589,7 @@ func diffuse_uvt(dt:float, num_iters:int):
 			[sampler_nearest_clamp, uvst_texture_prev_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 			uvst_texture_rid, 2, RenderingDevice.UNIFORM_TYPE_IMAGE])
 		dispatch(compute_list, shader_name, uniform_set, pc_bytes)
-	set_square_bnd_uv_open(compute_list)
+		set_square_bnd_uv_open(compute_list)
 
 	rd.compute_list_end()
 
