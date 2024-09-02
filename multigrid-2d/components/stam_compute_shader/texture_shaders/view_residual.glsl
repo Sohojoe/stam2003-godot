@@ -36,20 +36,18 @@ void main() {
     vec2 texelSize = 1.0 / vec2(consts.viewX, consts.viewY);
     vec2 UV = (vec2(cell) + 0.5) * texelSize;
 
-    float p = texture(residual, UV).r; 
-	p = min(p / pc.color_scale, 1.);
+    float value = texture(residual, UV).r; 
+	value = clamp(value / pc.color_scale, -1., 1.);
 
-    // Calculate magnitude and direction
-    float magnitude = sqrt(p * p + p * p);
-    float direction = atan(p, p);  // Range from -PI to PI
+    float r = 0.;
+    float g = 0.;
+    float b = 0.;
 
-    // Normalize direction to [0, 1] range for hue
-    float hue = (direction + PI) / (2.0 * PI);
-    float saturation = 1.0;
-    float value = magnitude;  // Assuming magnitude is already normalized, otherwise, you may need to normalize it
-
-    // Convert HSV to RGB
-    vec3 rgb = hsv2rgb(vec3(hue, saturation, value));
-    vec4 color = vec4(rgb, 1.0);
+    if (value < 0.0) {
+        r = -value; g = 0.0; b = 0.0;
+    } else {
+        r = 0.0; g = value; b = 0.0;  //  positive divergence
+    }
+    vec4 color = vec4(r, g, b, 1.0);
     imageStore(output_image, cell, color);
 }

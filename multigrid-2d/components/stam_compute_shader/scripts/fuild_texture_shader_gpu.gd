@@ -607,47 +607,6 @@ func diffuse_uvt(dt:float, num_iters:int):
 
 	rd.compute_list_end()
 
-func project_s(num_iters: int):
-	
-	var compute_list = rd.compute_list_begin()
-
-	# Compute divergence
-	var shader_name_div = "project_compute_divergence"
-	var uniform_set_div = get_uniform_set([
-		shader_name_div,
-		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest_clamp, uvst_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		#[sampler_nearest_0, s_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		p_texture_rid, 3, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		div_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
-	dispatch(compute_list, shader_name_div, uniform_set_div)
-
-	# Solve pressure iterations
-	for k in range(num_iters):
-		swap_p_buffer()
-		var shader_name_p = "project_solve_pressure"
-		var uniform_set_p = get_uniform_set([
-			shader_name_p,
-				consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-				[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-				p_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
-				[sampler_nearest_clamp, div_texture_rid], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-				[sampler_nearest_clamp, p_texture_prev_rid], 10, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
-		dispatch(compute_list, shader_name_p, uniform_set_p)
-
-	# Apply pressure gradient
-	var shader_name_apply_p = "project_apply_pressure"
-	var uniform_set_apply_p = get_uniform_set([
-		shader_name_apply_p,
-		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest_clamp, p_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		[sampler_nearest_clamp, uvst_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		uvst_texture_rid, 3, RenderingDevice.UNIFORM_TYPE_IMAGE])
-	dispatch(compute_list, shader_name_apply_p, uniform_set_apply_p)
-	set_square_bnd_uv_open(compute_list)
-
-	rd.compute_list_end()
-
 func multigrid_v_cycle(num_iters:int):
 	var compute_list = rd.compute_list_begin()
 
@@ -681,8 +640,8 @@ func multigrid_v_cycle(num_iters:int):
 		shader_name_res,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
 		[sampler_nearest_0, s_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		[sampler_nearest_0, p_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		[sampler_nearest_0, div_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_clamp, p_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_clamp, div_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 		residual_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
 	dispatch(compute_list, shader_name_res, uniform_set_res)
 
