@@ -1,0 +1,8 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://daspc1brf7s5j"]
+
+[ext_resource type="Shader" uid="uid://fjtbpme5b4s8" path="res://components/stam_compute_shader/render_shaders/uv.tres" id="1_fvg1t"]
+
+[resource]
+shader = ExtResource("1_fvg1t")
+shader_parameter/u_buffer = null
+shader_parameter/v_buffer = null

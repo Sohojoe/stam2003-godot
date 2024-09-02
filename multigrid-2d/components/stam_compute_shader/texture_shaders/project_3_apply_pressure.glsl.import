@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://dx8f3peme0iwj"
+path="res://.godot/imported/project_3_apply_pressure.glsl-d08dc0d3f21ef1e4f2f186e433dc2e98.res"
+
+[deps]
+
+source_file="res://components/stam_compute_shader/texture_shaders/project_3_apply_pressure.glsl"
+dest_files=["res://.godot/imported/project_3_apply_pressure.glsl-d08dc0d3f21ef1e4f2f186e433dc2e98.res"]
+
+[params]
+
