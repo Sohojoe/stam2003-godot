@@ -17,6 +17,7 @@ extends Node2D
 @export_range(0.0, 1.0) var add_perturbance_probability: float = .2
 @export var num_iters_projection: int = 20
 @export var num_iters_diffuse: int = 20
+@export var iter_to_residual: int = 20
 @export var diffuse_visc_value: float = .00003
 @export var diffuse_diff_value: float = .00001
 @export var wind: Vector2 = Vector2.ZERO
@@ -633,17 +634,18 @@ func multigrid_v_cycle(num_iters:int):
 				[sampler_nearest_clamp, div_texture_rid], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 				[sampler_nearest_clamp, p_texture_prev_rid], 10, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
 		dispatch(compute_list, shader_name_p, uniform_set_p)
-
-	# calculate residual
-	var shader_name_res = "calculate_residual"
-	var uniform_set_res = get_uniform_set([
-		shader_name_res,
-		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest_0, s_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		[sampler_nearest_clamp, p_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		[sampler_nearest_clamp, div_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		residual_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
-	dispatch(compute_list, shader_name_res, uniform_set_res)
+		
+		if k == iter_to_residual-1:
+			# calculate residual
+			var shader_name_res = "calculate_residual"
+			var uniform_set_res = get_uniform_set([
+				shader_name_res,
+				consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+				[sampler_nearest_0, s_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+				[sampler_nearest_clamp, p_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+				[sampler_nearest_clamp, div_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+				residual_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
+			dispatch(compute_list, shader_name_res, uniform_set_res)
 
 	# legacy apply pressure gradient
 	var shader_name_apply_p = "project_apply_pressure"
