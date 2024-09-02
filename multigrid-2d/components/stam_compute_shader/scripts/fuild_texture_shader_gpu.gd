@@ -5,8 +5,9 @@ extends Node2D
 # ---- global illimination values
 @export var skip_gi_rendering: bool = false
 @export_range(0, 3, .1) var di_debug_view: int = 0
-@export_range(0.0, 1.0) var debug_div_color_scale: float = 0.0002
-@export_range(0.0, 0.010) var debug_p_color_scale: float = 0.0003
+@export_range(0.0, 30) var debug_residual_color_scale: float = 1.0
+@export_range(0.0, 0.010) var debug_div_color_scale: float = 0.0002
+@export_range(0.0, 0.010) var debug_p_color_scale: float = 0.005
 @export_range(0.0, 0.30) var debug_uv_color_scale: float = 0.07
 # ---- config
 @export var grid_size_n:int = 64
@@ -47,6 +48,9 @@ var shader_file_names = {
 	"view_div": "res://components/stam_compute_shader/texture_shaders/view_div.glsl",
 	"view_p": "res://components/stam_compute_shader/texture_shaders/view_p.glsl",
 	"view_uv": "res://components/stam_compute_shader/texture_shaders/view_uv.glsl",
+	"view_residual": "res://components/stam_compute_shader/texture_shaders/view_residual.glsl",
+	"calculate_residual": "res://components/stam_compute_shader/texture_shaders/calculate_residual.glsl",
+	"restriction": "res://components/stam_compute_shader/texture_shaders/restriction.glsl",
 }
 var texture_shader_file_names = {
 	#"view_t": "res://components/stam_compute_shader/texture_shaders/view_t.gdshader",
@@ -149,6 +153,8 @@ var uvst_texture_prev_rid:RID
 var sampler_nearest_0:RID
 var sampler_nearest_clamp:RID
 var sampler_linear_clamp:RID
+var residual_texture:Texture2DRD
+var residual_texture_rid:RID
 
 
 var ignition_changed:bool = false
@@ -288,6 +294,9 @@ func initialize_compute_code(grid_size: int) -> void:
 	uvst_texture_prev_rid = rd.texture_create(fmt3_R16G16B16A16_SFLOAT, view3)
 	uvst_texture_prev = Texture2DRD.new()
 	uvst_texture_prev.texture_rd_rid = uvst_texture_prev_rid
+	residual_texture_rid = rd.texture_create(fmt3_R16_SFLOAT, view3)
+	residual_texture = Texture2DRD.new()
+	residual_texture.texture_rd_rid = residual_texture_rid
 
 	var i_bytes = state
 	rd.texture_update(s_texture_rid, 0, i_bytes)
@@ -372,6 +381,9 @@ func free_previous_resources():
 		rd.free_rid(sampler_nearest_clamp)
 	if sampler_linear_clamp:
 		rd.free_rid(sampler_linear_clamp)
+	if residual_texture:
+		rd.free_rid(residual_texture_rid)
+		residual_texture = null
 	
 	uniform_sets.clear()
 	
@@ -402,16 +414,18 @@ func simulate_stam(dt: float) -> void:
 	# apply_ignition() # already called in cool_and_lift
 	cool_and_lift(dt)
 	diffuse_uvt(dt, num_iters_diffuse)
-	project_s(num_iters_projection)
+	multigrid_v_cycle(num_iters_projection)
 	stam_advect_uvt(dt)
-	project_s(num_iters_projection)
+	multigrid_v_cycle(num_iters_projection)
 	if not skip_gi_rendering:
 		match di_debug_view:
 			1:
-				view_div()
+				view_residual()
 			2:
-				view_p()
+				view_div()
 			3:
+				view_p()
+			4:
 				view_uv()
 			_:
 				view_t()
@@ -634,6 +648,57 @@ func project_s(num_iters: int):
 
 	rd.compute_list_end()
 
+func multigrid_v_cycle(num_iters:int):
+	var compute_list = rd.compute_list_begin()
+
+	# Compute divergence
+	var shader_name_div = "project_compute_divergence"
+	var uniform_set_div = get_uniform_set([
+		shader_name_div,
+		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+		[sampler_nearest_clamp, uvst_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		#[sampler_nearest_0, s_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		p_texture_rid, 3, RenderingDevice.UNIFORM_TYPE_IMAGE,
+		div_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
+	dispatch(compute_list, shader_name_div, uniform_set_div)
+
+	# Solve pressure iterations
+	for k in range(num_iters):
+		swap_p_buffer()
+		var shader_name_p = "project_solve_pressure"
+		var uniform_set_p = get_uniform_set([
+			shader_name_p,
+				consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+				[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+				p_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
+				[sampler_nearest_clamp, div_texture_rid], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+				[sampler_nearest_clamp, p_texture_prev_rid], 10, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
+		dispatch(compute_list, shader_name_p, uniform_set_p)
+
+	# calculate residual
+	var shader_name_res = "calculate_residual"
+	var uniform_set_res = get_uniform_set([
+		shader_name_res,
+		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+		[sampler_nearest_0, s_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_0, p_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_0, div_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		residual_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
+	dispatch(compute_list, shader_name_res, uniform_set_res)
+
+	# legacy apply pressure gradient
+	var shader_name_apply_p = "project_apply_pressure"
+	var uniform_set_apply_p = get_uniform_set([
+		shader_name_apply_p,
+		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+		[sampler_nearest_clamp, p_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_clamp, uvst_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		uvst_texture_rid, 3, RenderingDevice.UNIFORM_TYPE_IMAGE])
+	dispatch(compute_list, shader_name_apply_p, uniform_set_apply_p)
+	set_square_bnd_uv_open(compute_list)
+
+	rd.compute_list_end()
+
 func stam_advect_uvt(dt: float):
 	swap_uvst_buffer()
 	var read_texture = uvst_texture_prev_rid
@@ -674,18 +739,32 @@ func view_t():
 	dispatch_view(compute_list, shader_name, uniform_set)
 	rd.compute_list_end()
 
+func view_residual():
+	var shader_name = "view_residual"
+	var pc_data := PackedFloat32Array([debug_residual_color_scale])
+	var pc_bytes = pc_data.to_byte_array()
+	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
+	var compute_list = rd.compute_list_begin()
+	var uniform_set = get_uniform_set([
+		shader_name,
+		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+		[sampler_nearest_0, residual_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		view_gpu_texture_shader.view_texture, 2, RenderingDevice.UNIFORM_TYPE_IMAGE],
+		)
+	dispatch_view(compute_list, shader_name, uniform_set, pc_bytes)
+	rd.compute_list_end()
 
 func view_div():
 	var compute_list = rd.compute_list_begin()
-	var shader_name_div = "project_compute_divergence"
-	var uniform_set_div = get_uniform_set([
-		shader_name_div,
-		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest_clamp, uvst_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		#[sampler_nearest_0, s_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		p_texture_rid, 3, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		div_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
-	dispatch(compute_list, shader_name_div, uniform_set_div)
+	# var shader_name_div = "project_compute_divergence"
+	# var uniform_set_div = get_uniform_set([
+	# 	shader_name_div,
+	# 	consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+	# 	[sampler_nearest_clamp, uvst_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+	# 	#[sampler_nearest_0, s_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+	# 	p_texture_rid, 3, RenderingDevice.UNIFORM_TYPE_IMAGE,
+	# 	div_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
+	# dispatch(compute_list, shader_name_div, uniform_set_div)
 
 	var shader_name = "view_div"
 	var pc_data := PackedFloat32Array([debug_div_color_scale])

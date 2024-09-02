@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://klu4mgb3a3em"
+path="res://.godot/imported/calculate_residual.glsl-6a76b670e02eb14133ab54b574f8be97.res"
+
+[deps]
+
+source_file="res://components/stam_compute_shader/texture_shaders/calculate_residual.glsl"
+dest_files=["res://.godot/imported/calculate_residual.glsl-6a76b670e02eb14133ab54b574f8be97.res"]
+
+[params]
+
