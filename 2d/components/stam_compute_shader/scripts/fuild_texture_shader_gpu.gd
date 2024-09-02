@@ -148,6 +148,7 @@ var uvst_texture_prev:Texture2DRD
 var uvst_texture_prev_rid:RID
 var sampler_nearest_0:RID
 var sampler_nearest_clamp:RID
+var sampler_linear_clamp:RID
 
 
 var ignition_changed:bool = false
@@ -303,10 +304,14 @@ func initialize_compute_code(grid_size: int) -> void:
 	ss2.repeat_u = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_EDGE
 	ss2.repeat_v = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_EDGE
 	ss2.repeat_w = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_EDGE
-	#ss2.repeat_u = RenderingDevice.SAMPLER_REPEAT_MODE_MIRRORED_REPEAT
-	#ss2.repeat_v = RenderingDevice.SAMPLER_REPEAT_MODE_MIRRORED_REPEAT
-	#ss2.repeat_w = RenderingDevice.SAMPLER_REPEAT_MODE_MIRRORED_REPEAT
 	sampler_nearest_clamp = rd.sampler_create(ss2)
+	var ss3 = RDSamplerState.new()
+	ss3.mag_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
+	ss3.min_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
+	ss3.repeat_u = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_EDGE
+	ss3.repeat_v = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_EDGE
+	ss3.repeat_w = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_EDGE
+	sampler_linear_clamp = rd.sampler_create(ss3)
 
 
 	for key in texture_shader_file_names.keys():
@@ -365,6 +370,8 @@ func free_previous_resources():
 		rd.free_rid(sampler_nearest_0)
 	if sampler_nearest_clamp:
 		rd.free_rid(sampler_nearest_clamp)
+	if sampler_linear_clamp:
+		rd.free_rid(sampler_linear_clamp)
 	
 	uniform_sets.clear()
 	
@@ -635,7 +642,7 @@ func stam_advect_uvt(dt: float):
 	var uniform_set = get_uniform_set([
 		shader_name,
 			consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-			[sampler_nearest_clamp, read_texture], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			[sampler_linear_clamp, read_texture], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 			write_texture, 2, RenderingDevice.UNIFORM_TYPE_IMAGE])
 
 	var pc_bytes := PackedFloat32Array([dt]).to_byte_array()
@@ -673,11 +680,10 @@ func view_div():
 	var uniform_set_div = get_uniform_set([
 		shader_name_div,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest_0, u_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		[sampler_nearest_0, v_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		p_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
-		div_texture_rid, 5, RenderingDevice.UNIFORM_TYPE_IMAGE])
+		[sampler_nearest_clamp, uvst_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		#[sampler_nearest_0, s_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		p_texture_rid, 3, RenderingDevice.UNIFORM_TYPE_IMAGE,
+		div_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
 	dispatch(compute_list, shader_name_div, uniform_set_div)
 
 	var shader_name = "view_div"
