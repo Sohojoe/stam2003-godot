@@ -561,12 +561,14 @@ func swap_p_buffer(idx:int = 0):
 	multigrid_p_textures[idx] = multigrid_p_textures_prev[idx]
 	multigrid_p_textures_prev[idx] = tmp_t
 
-func dispatch(compute_list, shader_name, uniform_set, pc_bytes=null):
+func dispatch(compute_list, shader_name, uniform_set, pc_bytes=null, grid_size=null):
 	rd.compute_list_bind_compute_pipeline(compute_list, pipelines[shader_name])
 	rd.compute_list_bind_uniform_set(compute_list, uniform_set, 0)
 	if pc_bytes:
 		rd.compute_list_set_push_constant(compute_list, pc_bytes, pc_bytes.size())
-	rd.compute_list_dispatch(compute_list, int(ceil(numX / 16.0)), int(ceil(numY / 16.0)), 1)
+	if not grid_size:
+		grid_size = numX
+	rd.compute_list_dispatch(compute_list, int(ceil(grid_size / 16.0)), int(ceil(grid_size / 16.0)), 1)
 	
 func dispatch_square_bounds(compute_list, shader_name, uniform_set, pc_bytes=null):
 	rd.compute_list_bind_compute_pipeline(compute_list, pipelines[shader_name])
@@ -695,34 +697,36 @@ func multigrid_v_cycle():
 	# Multigrid V-Cycle
 	# down loop
 	for i in range(len(multigrid_correction_textures) - 1):
+		var fine_idx:int = i;
+		var coarse_idx:int = i+1;
 		# Compute Residual:
 		var shader_name_res = "calculate_residual"
 		var uniform_set_res = get_uniform_set([
 			shader_name_res,
 			consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
 			[sampler_nearest_0, s_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-			[sampler_nearest_clamp, multigrid_p_texture_rids[i]], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			[sampler_nearest_clamp, multigrid_p_texture_rids[fine_idx]], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 			[sampler_nearest_clamp, div_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-			multigrid_correction_texture_rids[i], 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
-		dispatch(compute_list, shader_name_res, uniform_set_res)
+			multigrid_correction_texture_rids[fine_idx], 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
+		dispatch(compute_list, shader_name_res, uniform_set_res, null, multigrid_sizes[fine_idx])
 
 		# Restrict the residual to the next coarser grid:
 		var shader_name_restrict = "restriction"
 		var uniform_set_restrict = get_uniform_set([
 			shader_name_restrict,
 			consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-			[sampler_nearest_clamp, multigrid_correction_texture_rids[i]], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-			multigrid_correction_texture_rids[i+1], 2, RenderingDevice.UNIFORM_TYPE_IMAGE
+			[sampler_nearest_clamp, multigrid_correction_texture_rids[fine_idx]], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			multigrid_correction_texture_rids[coarse_idx], 2, RenderingDevice.UNIFORM_TYPE_IMAGE
 		])
-		dispatch(compute_list, shader_name_restrict, uniform_set_restrict)
+		dispatch(compute_list, shader_name_restrict, uniform_set_restrict, null, multigrid_sizes[coarse_idx])
 
 		# Set the initial presure state on the coarser grid (to 0)
 		var shader_name_init = "set_zero"
 		var uniform_set_init = get_uniform_set([
 			shader_name_init,
-			multigrid_p_texture_rids[i+1], 0, RenderingDevice.UNIFORM_TYPE_IMAGE
+			multigrid_p_texture_rids[coarse_idx], 0, RenderingDevice.UNIFORM_TYPE_IMAGE
 		])
-		dispatch(compute_list, shader_name_init, uniform_set_init)
+		dispatch(compute_list, shader_name_init, uniform_set_init, null, multigrid_sizes[coarse_idx])
 
 		# Smooth the presure using the residual as divergence input
 		for _j in range(num_iters_smooth):
@@ -731,10 +735,10 @@ func multigrid_v_cycle():
 				shader_name_smooth,
 				consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
 				[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-				multigrid_p_texture_rids[i+1], 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
-				[sampler_nearest_clamp, multigrid_correction_texture_rids[i+1]], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-				[sampler_nearest_clamp, multigrid_p_texture_rids_prev[i+1]], 10, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
-			dispatch(compute_list, shader_name_smooth, uniform_set_smooth)
+				multigrid_p_texture_rids[coarse_idx], 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
+				[sampler_nearest_clamp, multigrid_correction_texture_rids[coarse_idx]], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+				[sampler_nearest_clamp, multigrid_p_texture_rids_prev[coarse_idx]], 10, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
+			dispatch(compute_list, shader_name_smooth, uniform_set_smooth, null, multigrid_sizes[coarse_idx])
 
 	# Solve at the coarsest level
 	var coarsest_level = len(multigrid_correction_textures) - 1
