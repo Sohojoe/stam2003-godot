@@ -23,10 +23,8 @@ const vec2 left = vec2(-1.0, 0.0);
 const vec2 right = vec2(1.0, 0.0);
 
 void main() {
-    uint numX = consts.numX;
-    uint numY = consts.numY;
     ivec2 cell = ivec2(gl_GlobalInvocationID.xy);
-    vec2 texelSize = 1.0 / vec2(numX, numY);
+    vec2 texelSize = 1.0 / imageSize(residual);
     vec2 UV = (vec2(cell) + 0.5) * texelSize;
 
     float div_value = texelFetch(div, cell, 0).r;
