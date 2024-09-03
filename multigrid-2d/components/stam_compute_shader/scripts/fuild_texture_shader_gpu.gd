@@ -154,8 +154,13 @@ var uvst_texture_prev_rid:RID
 var sampler_nearest_0:RID
 var sampler_nearest_clamp:RID
 var sampler_linear_clamp:RID
-var residual_texture:Texture2DRD
-var residual_texture_rid:RID
+# var residual_texture:Texture2DRD
+# var residual_texture_rid:RID
+var multi_grid_sizes:Array[int]
+var multi_grid_textures:Array[Texture2DRD]
+var multi_grid_texture_rids:Array[RID]
+var multi_grid_textures_prev:Array[Texture2DRD]
+var multi_grid_texture_rids_prev:Array[RID]
 
 
 var ignition_changed:bool = false
@@ -295,10 +300,39 @@ func initialize_compute_code(grid_size: int) -> void:
 	uvst_texture_prev_rid = rd.texture_create(fmt3_R16G16B16A16_SFLOAT, view3)
 	uvst_texture_prev = Texture2DRD.new()
 	uvst_texture_prev.texture_rd_rid = uvst_texture_prev_rid
-	residual_texture_rid = rd.texture_create(fmt3_R16_SFLOAT, view3)
-	residual_texture = Texture2DRD.new()
-	residual_texture.texture_rd_rid = residual_texture_rid
 
+	# calculate the number of multi-grid levels, we stop at 32x32 unless < 3
+	multi_grid_sizes = []
+	multi_grid_textures = []
+	multi_grid_texture_rids = []
+	multi_grid_textures_prev = []
+	multi_grid_texture_rids_prev = []
+	var num_multi_grid_levels = 0
+	var cur_grid_size:int = numX
+	while cur_grid_size > 32 or num_multi_grid_levels < 3:
+		multi_grid_sizes.append(cur_grid_size)
+		var fmt_mg_R16_SFLOAT := RDTextureFormat.new()
+		fmt_mg_R16_SFLOAT.width = cur_grid_size
+		fmt_mg_R16_SFLOAT.height = cur_grid_size
+		fmt_mg_R16_SFLOAT.format = RenderingDevice.DATA_FORMAT_R16_SFLOAT
+		fmt_mg_R16_SFLOAT.usage_bits = \
+				RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
+				RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT
+		num_multi_grid_levels += 1
+		var mg_texture_rid = rd.texture_create(fmt_mg_R16_SFLOAT, view3)
+		var mg_texture = Texture2DRD.new()
+		mg_texture.texture_rd_rid = mg_texture_rid
+		multi_grid_textures.append(mg_texture)
+		multi_grid_texture_rids.append(mg_texture_rid)
+		mg_texture_rid = rd.texture_create(fmt_mg_R16_SFLOAT, view3)
+		mg_texture = Texture2DRD.new()
+		mg_texture.texture_rd_rid = mg_texture_rid
+		multi_grid_textures_prev.append(mg_texture)
+		multi_grid_texture_rids_prev.append(mg_texture_rid)
+		cur_grid_size /= 2
+		num_multi_grid_levels += 1
+
+	
 	var i_bytes = state
 	rd.texture_update(s_texture_rid, 0, i_bytes)
 
@@ -382,9 +416,14 @@ func free_previous_resources():
 		rd.free_rid(sampler_nearest_clamp)
 	if sampler_linear_clamp:
 		rd.free_rid(sampler_linear_clamp)
-	if residual_texture:
-		rd.free_rid(residual_texture_rid)
-		residual_texture = null
+	for i in range(len(multi_grid_textures)):
+		rd.free_rid(multi_grid_texture_rids[i])
+		rd.free_rid(multi_grid_texture_rids_prev[i])
+	multi_grid_textures.clear()
+	multi_grid_textures_prev.clear()
+	multi_grid_sizes.clear()
+	multi_grid_texture_rids.clear()
+	multi_grid_texture_rids_prev.clear()
 	
 	uniform_sets.clear()
 	
@@ -644,7 +683,7 @@ func multigrid_v_cycle(num_iters:int):
 				[sampler_nearest_0, s_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 				[sampler_nearest_clamp, p_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 				[sampler_nearest_clamp, div_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-				residual_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
+				multi_grid_texture_rids[0], 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
 			dispatch(compute_list, shader_name_res, uniform_set_res)
 
 	# legacy apply pressure gradient
@@ -709,7 +748,7 @@ func view_residual():
 	var uniform_set = get_uniform_set([
 		shader_name,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest_0, residual_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_0, multi_grid_texture_rids[0]], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 		view_gpu_texture_shader.view_texture, 2, RenderingDevice.UNIFORM_TYPE_IMAGE],
 		)
 	dispatch_view(compute_list, shader_name, uniform_set, pc_bytes)
