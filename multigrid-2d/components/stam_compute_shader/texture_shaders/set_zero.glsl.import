@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://d13fgx2s3qugt"
+path="res://.godot/imported/set_zero.glsl-a5cba7787e73f34cd648f8d24b00e2ba.res"
+
+[deps]
+
+source_file="res://components/stam_compute_shader/texture_shaders/set_zero.glsl"
+dest_files=["res://.godot/imported/set_zero.glsl-a5cba7787e73f34cd648f8d24b00e2ba.res"]
+
+[params]
+
