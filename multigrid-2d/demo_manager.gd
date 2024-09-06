@@ -49,6 +49,8 @@ func handle_input():
 		fire_gpu_texture_shader.restart()
 	if Input.is_action_just_pressed("toggle_view"):
 		fire_gpu_texture_shader.skip_gi_rendering = !fire_gpu_texture_shader.skip_gi_rendering
+	if Input.is_action_just_pressed("toggle_pause_motion"):
+		fire_gpu_texture_shader.pause_motion = !fire_gpu_texture_shader.pause_motion
 
 func update_debug():
 	var mg_idx = fire_gpu_texture_shader.debug_multigrid_idx

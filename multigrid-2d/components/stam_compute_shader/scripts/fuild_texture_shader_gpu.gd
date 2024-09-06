@@ -3,13 +3,14 @@ class_name FluidTextureShaderGpu
 extends Node2D
 
 # ---- global illimination values
-@export var skip_gi_rendering: bool = false
 @export_range(0, 3, .1) var di_debug_view: int = 0
 @export var debug_multigrid_idx: int = 0
 @export_range(0.0, 30) var debug_residual_color_scale: float = 1.0
 @export_range(0.0, 0.010) var debug_div_color_scale: float = 0.0002
 @export_range(0.0, 0.010) var debug_p_color_scale: float = 0.005
 @export_range(0.0, 0.30) var debug_uv_color_scale: float = 0.07
+@export var skip_gi_rendering: bool = false
+@export var pause_motion: bool = false
 # ---- config
 @export var grid_size_n:int = 64
 # ---- params
@@ -614,6 +615,8 @@ func set_square_bnd_uv_open(compute_list):
 # 	rd.compute_list_end()
 
 func cool_and_lift(dt: float):
+	if pause_motion:
+		return
 	var shader_name = "cool_and_lift"
 	var uniform_set = get_uniform_set([
 		shader_name,
@@ -648,6 +651,8 @@ func apply_ignition(compute_list):
 
 # uvst_texture
 func diffuse_uvt(dt:float, num_iters:int):
+	if pause_motion:
+		return
 	var diff = Vector4(diffuse_visc_value, diffuse_visc_value, 0, diffuse_diff_value)  
 	var shader_name = "diffuse"
 	var pc_bytes := PackedVector4Array([diff]).to_byte_array()
@@ -808,6 +813,8 @@ func multigrid_v_cycle():
 	rd.compute_list_end()
 
 func stam_advect_uvt(dt: float):
+	if pause_motion:
+		return
 	swap_uvst_buffer()
 	var read_texture = uvst_texture_prev_rid
 	var write_texture = uvst_texture_rid
