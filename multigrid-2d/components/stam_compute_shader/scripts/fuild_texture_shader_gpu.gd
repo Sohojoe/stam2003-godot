@@ -704,6 +704,7 @@ func multigrid_v_cycle():
 	
 	# Multigrid V-Cycle
 	# down loop
+	var coarsest_level = len(multigrid_correction_textures) - 1
 	for i in range(len(multigrid_correction_textures) - 1):
 		var fine_idx:int = i;
 		var coarse_idx:int = i+1;
@@ -740,7 +741,12 @@ func multigrid_v_cycle():
 
 		# Smooth the presure using the residual as divergence input
 		var shader_name_smooth = "project_solve_pressure"
-		for _j in range(num_iters_smooth):
+		var num_iters = num_iters_smooth
+		if coarse_idx == coarsest_level:
+			# Solve at the coarsest level
+			num_iters = num_iters_coarset_grid_smooth
+		for _j in range(num_iters):
+			swap_p_buffer(coarse_idx)
 			var uniform_set_smooth = get_uniform_set([
 				shader_name_smooth,
 				consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
@@ -752,8 +758,7 @@ func multigrid_v_cycle():
 		debug_view(compute_list, shader_name_smooth, multigrid_p_texture_rids[coarse_idx], coarse_idx)
 
 	# Solve at the coarsest level
-	var coarsest_level = len(multigrid_correction_textures) - 1
-	# for _ in range(num_coarsest_iterations):
+	# for _ in range(num_iters_coarset_grid_smooth):
 	# 	var shader_name_coarsest = "solve_coarsest"
 	# 	var uniform_set_coarsest = get_uniform_set([
 	# 		shader_name_coarsest,
