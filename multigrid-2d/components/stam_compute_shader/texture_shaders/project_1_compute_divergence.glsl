@@ -46,10 +46,10 @@ void main() {
     // float _h = 1.0 / max(consts.numX, consts.numY);
     const float _h = 1.0 / 64;
     float value = -0.5 * _h * (
-        texture(uvst_in, UV + right * texelSize).x -
-        texture(uvst_in, UV + left * texelSize).x + 
-        texture(uvst_in, UV + down * texelSize).y - 
-        texture(uvst_in, UV + up * texelSize).y);
+        texture(uvst_in, cell_r).x -
+        texture(uvst_in, cell_l).x + 
+        texture(uvst_in, cell_d).y - 
+        texture(uvst_in, cell_u).y);
 
     value = skip ? 0 : value;
     imageStore(div, cell, vec4(value));
