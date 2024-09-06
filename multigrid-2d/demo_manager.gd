@@ -38,6 +38,8 @@ func handle_input():
 		cycle_grid_size()
 	if Input.is_action_just_pressed("cycle_debug_view"):
 		cycle_debug_view()
+	if Input.is_action_just_pressed("cycle_multigrid"):
+		cycle_multigrid()
 	if Input.is_action_just_pressed("debug_view"):
 		if fire_gpu_texture_shader.di_debug_view != debug_view:
 			fire_gpu_texture_shader.di_debug_view = debug_view
@@ -49,15 +51,19 @@ func handle_input():
 		fire_gpu_texture_shader.skip_gi_rendering = !fire_gpu_texture_shader.skip_gi_rendering
 
 func update_debug():
+	var mg_idx = fire_gpu_texture_shader.debug_multigrid_idx
 	if mode == 0:
 		var s = " mode: fire_gpu_texture_shader"
 		s = s+"\n grid size: " + str(fire_gpu_texture_shader.grid_size_n)
 		if fire_gpu_texture_shader.di_debug_view == 1:
 			s = s+"\n debug view: residual"
+			s = s+"\n multigrid level: " + str(fire_gpu_texture_shader.multigrid_sizes[mg_idx])
 		elif fire_gpu_texture_shader.di_debug_view == 2:
-			s = s+"\n debug view: div (divergance)"
-		elif fire_gpu_texture_shader.di_debug_view == 3:
 			s = s+"\n debug view: p (presure)"
+			s = s+"\n multigrid level: " + str(fire_gpu_texture_shader.multigrid_sizes[mg_idx])
+		elif fire_gpu_texture_shader.di_debug_view == 3:
+			s = s+"\n debug view: div (divergance)"
+			s = s+"\n multigrid level: " + str(fire_gpu_texture_shader.multigrid_sizes[mg_idx])
 		elif fire_gpu_texture_shader.di_debug_view == 4:
 			s = s+"\n debug view: uv (x,y velocity)"
 		else:
@@ -91,9 +97,16 @@ func cycle_grid_size():
 
 func set_grid_size():
 	fire_gpu_texture_shader.grid_size_n = grid_sizes[grid_size_idx]
+	if fire_gpu_texture_shader.debug_multigrid_idx >= len(fire_gpu_texture_shader.multigrid_sizes):
+		fire_gpu_texture_shader.debug_multigrid_idx = 0
 
 func cycle_debug_view():
 	debug_view += 1
 	if debug_view > 4:
 		debug_view = 1
 	fire_gpu_texture_shader.di_debug_view = debug_view
+
+func cycle_multigrid():
+	fire_gpu_texture_shader.debug_multigrid_idx += 1
+	if fire_gpu_texture_shader.debug_multigrid_idx >= len(fire_gpu_texture_shader.multigrid_sizes):
+		fire_gpu_texture_shader.debug_multigrid_idx = 0

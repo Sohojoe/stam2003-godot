@@ -5,6 +5,7 @@ extends Node2D
 # ---- global illimination values
 @export var skip_gi_rendering: bool = false
 @export_range(0, 3, .1) var di_debug_view: int = 0
+@export var debug_multigrid_idx: int = 0
 @export_range(0.0, 30) var debug_residual_color_scale: float = 1.0
 @export_range(0.0, 0.010) var debug_div_color_scale: float = 0.0002
 @export_range(0.0, 0.010) var debug_p_color_scale: float = 0.005
@@ -310,7 +311,7 @@ func initialize_compute_code(grid_size: int) -> void:
 	multigrid_p_texture_rids_prev = []
 	var num_multi_grid_levels = 0
 	var cur_grid_size:int = numX
-	while cur_grid_size > 32 or num_multi_grid_levels < 3:
+	while cur_grid_size >= 32 or num_multi_grid_levels < 3:
 		multigrid_sizes.append(cur_grid_size)
 		var fmt_mg_R16_SFLOAT := RDTextureFormat.new()
 		fmt_mg_R16_SFLOAT.width = cur_grid_size
@@ -478,11 +479,11 @@ func simulate_stam(dt: float) -> void:
 	if not skip_gi_rendering:
 		match di_debug_view:
 			1:
-				view_residual()
+				pass
 			2:
-				view_div()
+				pass
 			3:
-				view_p()
+				pass # view_div()
 			4:
 				view_uv()
 			_:
@@ -680,11 +681,12 @@ func multigrid_v_cycle():
 		multigrid_p_texture_rids[0], 3, RenderingDevice.UNIFORM_TYPE_IMAGE,
 		div_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
 	dispatch(compute_list, shader_name_div, uniform_set_div)
+	debug_view(compute_list, shader_name_div, div_texture_rid, 0)
 
 	# Pre-Smoothing Passes (Updating Pressure):
+	var shader_name_p = "project_solve_pressure"
 	for k in range(num_iters_pre_smooth):
 		swap_p_buffer()
-		var shader_name_p = "project_solve_pressure"
 		var uniform_set_p = get_uniform_set([
 			shader_name_p,
 				consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
@@ -693,6 +695,7 @@ func multigrid_v_cycle():
 				[sampler_nearest_clamp, div_texture_rid], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 				[sampler_nearest_clamp, multigrid_p_texture_rids_prev[0]], 10, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
 		dispatch(compute_list, shader_name_p, uniform_set_p)
+	debug_view(compute_list, shader_name_p, multigrid_p_texture_rids[0], 0)
 	
 	# Multigrid V-Cycle
 	# down loop
@@ -709,6 +712,7 @@ func multigrid_v_cycle():
 			[sampler_nearest_clamp, div_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 			multigrid_correction_texture_rids[fine_idx], 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
 		dispatch(compute_list, shader_name_res, uniform_set_res, null, multigrid_sizes[fine_idx])
+		debug_view(compute_list, shader_name_res, multigrid_correction_texture_rids[fine_idx], fine_idx)
 
 		# Restrict the residual to the next coarser grid:
 		var shader_name_restrict = "restriction"
@@ -719,6 +723,7 @@ func multigrid_v_cycle():
 			multigrid_correction_texture_rids[coarse_idx], 2, RenderingDevice.UNIFORM_TYPE_IMAGE
 		])
 		dispatch(compute_list, shader_name_restrict, uniform_set_restrict, null, multigrid_sizes[coarse_idx])
+		debug_view(compute_list, shader_name_restrict, multigrid_correction_texture_rids[coarse_idx], coarse_idx)
 
 		# Set the initial presure state on the coarser grid (to 0)
 		var shader_name_init = "set_zero"
@@ -729,8 +734,8 @@ func multigrid_v_cycle():
 		dispatch(compute_list, shader_name_init, uniform_set_init, null, multigrid_sizes[coarse_idx])
 
 		# Smooth the presure using the residual as divergence input
+		var shader_name_smooth = "project_solve_pressure"
 		for _j in range(num_iters_smooth):
-			var shader_name_smooth = "project_solve_pressure"
 			var uniform_set_smooth = get_uniform_set([
 				shader_name_smooth,
 				consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
@@ -739,6 +744,7 @@ func multigrid_v_cycle():
 				[sampler_nearest_clamp, multigrid_correction_texture_rids[coarse_idx]], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 				[sampler_nearest_clamp, multigrid_p_texture_rids_prev[coarse_idx]], 10, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
 			dispatch(compute_list, shader_name_smooth, uniform_set_smooth, null, multigrid_sizes[coarse_idx])
+		debug_view(compute_list, shader_name_smooth, multigrid_p_texture_rids[coarse_idx], coarse_idx)
 
 	# Solve at the coarsest level
 	var coarsest_level = len(multigrid_correction_textures) - 1
@@ -829,6 +835,28 @@ func handle_ignition_gpu():
 func mark_ignition_changed() -> void:
 	ignition_changed = true
 
+# debug_view(compute_list, "project_solve_pressure", multigrid_p_texture_rids[coarse_idx], coarse_idx)
+func debug_view(
+			compute_list,
+			shader_name:String,
+			texture_rid:RID,
+			multigrid_idx:int):
+	if skip_gi_rendering:
+		return
+	if multigrid_idx != debug_multigrid_idx:
+		return
+	if di_debug_view == 1 and shader_name == "calculate_residual":
+		view_residual(compute_list, texture_rid)
+	elif di_debug_view == 2 and shader_name == "project_solve_pressure":
+		view_p(compute_list, texture_rid)
+	elif di_debug_view == 3 and shader_name == "project_compute_divergence":
+		view_div(compute_list, texture_rid)
+	elif di_debug_view == 3 and shader_name == "restriction":
+		view_div(compute_list, texture_rid)
+		# "restriction":
+		# "prolongate_correction":
+		# "add_correction":
+
 func view_t():
 	var shader_name = "view_t"
 	var compute_list = rd.compute_list_begin()
@@ -841,33 +869,20 @@ func view_t():
 	dispatch_view(compute_list, shader_name, uniform_set)
 	rd.compute_list_end()
 
-func view_residual():
+func view_residual(compute_list, texture_rid):
 	var shader_name = "view_residual"
 	var pc_data := PackedFloat32Array([debug_residual_color_scale])
 	var pc_bytes = pc_data.to_byte_array()
 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
-	var compute_list = rd.compute_list_begin()
 	var uniform_set = get_uniform_set([
 		shader_name,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest_0, multigrid_correction_texture_rids[0]], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_0, texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 		view_gpu_texture_shader.view_texture, 2, RenderingDevice.UNIFORM_TYPE_IMAGE],
 		)
 	dispatch_view(compute_list, shader_name, uniform_set, pc_bytes)
-	rd.compute_list_end()
 
-func view_div():
-	var compute_list = rd.compute_list_begin()
-	# var shader_name_div = "project_compute_divergence"
-	# var uniform_set_div = get_uniform_set([
-	# 	shader_name_div,
-	# 	consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-	# 	[sampler_nearest_clamp, uvst_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-	# 	#[sampler_nearest_0, s_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-	# 	p_texture_rid, 3, RenderingDevice.UNIFORM_TYPE_IMAGE,
-	# 	div_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
-	# dispatch(compute_list, shader_name_div, uniform_set_div)
-
+func view_div(compute_list, texture_rid):
 	var shader_name = "view_div"
 	var pc_data := PackedFloat32Array([debug_div_color_scale])
 	var pc_bytes = pc_data.to_byte_array()
@@ -875,26 +890,23 @@ func view_div():
 	var uniform_set = get_uniform_set([
 		shader_name,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest_0, div_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_0, texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 		view_gpu_texture_shader.view_texture, 2, RenderingDevice.UNIFORM_TYPE_IMAGE],
 		)
 	dispatch_view(compute_list, shader_name, uniform_set, pc_bytes)
-	rd.compute_list_end()
 
-func view_p():
+func view_p(compute_list, texture_rid):
 	var shader_name = "view_p"
 	var pc_data := PackedFloat32Array([debug_p_color_scale])
 	var pc_bytes = pc_data.to_byte_array()
 	pc_bytes.resize(ceil(pc_bytes.size() / 16.0) * 16)
-	var compute_list = rd.compute_list_begin()
 	var uniform_set = get_uniform_set([
 		shader_name,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest_0, multigrid_p_texture_rids[0]], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_0, texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 		view_gpu_texture_shader.view_texture, 2, RenderingDevice.UNIFORM_TYPE_IMAGE],
 		)
 	dispatch_view(compute_list, shader_name, uniform_set, pc_bytes)
-	rd.compute_list_end()
 
 func view_uv():
 	var shader_name = "view_uv"
