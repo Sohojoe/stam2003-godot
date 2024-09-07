@@ -18,8 +18,9 @@ extends Node2D
 @export_range(1, 20, .1) var campfire_height: int = 2
 @export_range(0.0, 1.0) var add_perturbance_probability: float = .2
 @export var num_iters_pre_smooth: int = 3
-@export var num_iters_smooth: int = 3
-@export var num_iters_coarset_grid_smooth: int = 3
+@export var num_iters_smooth_down: int = 3
+@export var num_iters_coarset_grid_smooth: int = 20
+@export var num_iters_smooth_up: int = 3
 @export var num_iters_post_smooth: int = 3
 @export var num_iters_diffuse: int = 20
 @export var diffuse_visc_value: float = .00003
@@ -57,6 +58,8 @@ var shader_file_names = {
 	"calculate_residual": "res://components/stam_compute_shader/texture_shaders/calculate_residual.glsl",
 	"restriction": "res://components/stam_compute_shader/texture_shaders/restriction.glsl",
 	"set_zero": "res://components/stam_compute_shader/texture_shaders/set_zero.glsl",
+	"add_correction_to_pressure": "res://components/stam_compute_shader/texture_shaders/add_correction_to_pressure.glsl",
+	"prolongate_correction": "res://components/stam_compute_shader/texture_shaders/prolongate_correction.glsl",
 }
 var texture_shader_file_names = {
 	#"view_t": "res://components/stam_compute_shader/texture_shaders/view_t.gdshader",
@@ -479,16 +482,10 @@ func simulate_stam(dt: float) -> void:
 	multigrid_v_cycle()
 	if not skip_gi_rendering:
 		match di_debug_view:
-			1:
-				pass
-			2:
-				pass
-			3:
-				pass # view_div()
-			4:
-				view_uv()
-			_:
+			0:
 				view_t()
+			7:
+				view_uv()
 
 #--- helper functions
 func get_uniform(buffer, binding: int, uniform_type):
@@ -717,11 +714,6 @@ func multigrid_v_cycle():
 	for i in range(len(multigrid_correction_textures) - 1):
 		var fine_idx:int = i;
 		var coarse_idx:int = i+1;
-		var uniform_set_init2 = get_uniform_set([
-			"set_zero",
-			multigrid_correction_texture_rids[coarse_idx], 0, RenderingDevice.UNIFORM_TYPE_IMAGE
-		])
-		dispatch(compute_list, "set_zero", uniform_set_init2, null, multigrid_sizes[coarse_idx])
 		# Compute Residual:
 		swap_correction_buffer(fine_idx)
 		var shader_name_res = "calculate_residual"
@@ -756,7 +748,7 @@ func multigrid_v_cycle():
 		
 		# Smooth the presure using the residual as divergence input
 		var shader_name_smooth = "project_solve_pressure"
-		var num_iters = num_iters_smooth
+		var num_iters = num_iters_smooth_down
 		if coarse_idx == coarsest_level:
 			# Solve at the coarsest level
 			num_iters = num_iters_coarset_grid_smooth
@@ -774,52 +766,54 @@ func multigrid_v_cycle():
 		
 		cur_residual_input = multigrid_correction_texture_rids[coarse_idx]
 
-	# Solve at the coarsest level
-	# for _ in range(num_iters_coarset_grid_smooth):
-	# 	var shader_name_coarsest = "solve_coarsest"
-	# 	var uniform_set_coarsest = get_uniform_set([
-	# 		shader_name_coarsest,
-	# 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-	# 		[sampler_nearest_clamp, multigrid_correction_texture_rids[coarsest_level]], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-	# 		multi_grid_pressure_rids[coarsest_level], 2, RenderingDevice.UNIFORM_TYPE_IMAGE
-	# 	])
-	# 	dispatch(compute_list, shader_name_coarsest, uniform_set_coarsest)
-
 	# up loop
 	for i in range(len(multigrid_correction_textures) - 1, 0, -1):
+		var fine_idx:int = i-1;
+		var coarse_idx:int = i;
 		# Prolongate (interpolate) the correction from the coarser grid to the finer grid.
 		var shader_name_prolongate = "prolongate_correction"
-		# var uniform_set_prolongate = get_uniform_set([
-		# 	shader_name_prolongate,
-		# 	consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		# 	[sampler_nearest_clamp, multi_grid_pressure_rids[i]], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		# 	multi_grid_correction_rids[i-1], 2, RenderingDevice.UNIFORM_TYPE_IMAGE
-		# ])
-		# dispatch(compute_list, shader_name_prolongate, uniform_set_prolongate)
+		var uniform_set_prolongate = get_uniform_set([
+			shader_name_prolongate,
+			consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+			[sampler_nearest_clamp, multigrid_p_texture_rids[coarse_idx]], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			multigrid_correction_texture_rids[fine_idx], 2, RenderingDevice.UNIFORM_TYPE_IMAGE
+		])
+		dispatch(compute_list, shader_name_prolongate, uniform_set_prolongate, null, multigrid_sizes[fine_idx])
+		debug_view(compute_list, shader_name_prolongate, multigrid_correction_texture_rids[fine_idx], fine_idx)
 		#   so input is coarser grid presure
 
 		# Add prologated correction to this grids presure
-		# var shader_name_add = "add_correction"
-		# var uniform_set_add = get_uniform_set([
-		# 	shader_name_add,
-		# 	consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		# 	[sampler_nearest_clamp, multi_grid_pressure_rids[i-1]], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		# 	[sampler_nearest_clamp, multi_grid_correction_rids[i-1]], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		# 	multi_grid_pressure_rids[i-1], 3, RenderingDevice.UNIFORM_TYPE_IMAGE
-		# ])
-		# dispatch(compute_list, shader_name_add, uniform_set_add)
-
+		var shader_name_add = "add_correction_to_pressure"
+		var uniform_set_add = get_uniform_set([
+			shader_name_add,
+			consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+			[sampler_nearest_clamp, multigrid_p_texture_rids[fine_idx]], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			[sampler_nearest_clamp, multigrid_correction_texture_rids[fine_idx]], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			multigrid_p_texture_rids[fine_idx], 3, RenderingDevice.UNIFORM_TYPE_IMAGE
+		])
+		dispatch(compute_list, shader_name_add, uniform_set_add, null, multigrid_sizes[fine_idx])
+		debug_view(compute_list, shader_name_add, multigrid_p_texture_rids[fine_idx], fine_idx)
 		# Smooth the pressure
-		# for _ in range(num_smoothing_iterations):
-		# 	var shader_name_smooth = "smooth_pressure"
-		# 	var uniform_set_smooth = get_uniform_set([
-		# 		shader_name_smooth,
-		# 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		# 		[sampler_nearest_clamp, multigrid_correction_texture_rids[i-1]], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		# 		[sampler_nearest_clamp, multi_grid_pressure_rids[i-1]], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-		# 		multi_grid_pressure_rids[i-1], 3, RenderingDevice.UNIFORM_TYPE_IMAGE
-		# 	])
-		# 	dispatch(compute_list, shader_name_smooth, uniform_set_smooth)
+		for _t in range(num_iters_smooth_up):
+			swap_p_buffer(coarse_idx)
+			var shader_name_smooth = "project_solve_pressure"
+			var uniform_set_smooth = get_uniform_set([
+				shader_name_smooth,
+				consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+				[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+				multigrid_p_texture_rids[fine_idx], 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
+				[sampler_nearest_clamp, multigrid_correction_texture_rids[fine_idx]], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+				[sampler_nearest_clamp, multigrid_p_texture_rids_prev[fine_idx]], 10, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			])
+			dispatch(compute_list, shader_name_smooth, uniform_set_smooth, null, multigrid_sizes[fine_idx])
+		debug_view(compute_list, "smooth_pressure_up", multigrid_p_texture_rids[fine_idx], fine_idx)
+
+	# HACK- nuke presure so we dont screw everything up
+	# var uniform_set_init2 = get_uniform_set([
+	# 	"set_zero",
+	# 	multigrid_p_texture_rids[0], 0, RenderingDevice.UNIFORM_TYPE_IMAGE
+	# ])
+	# dispatch(compute_list, "set_zero", uniform_set_init2, null, 0)
 
 	# apply pressure gradient
 	var shader_name_apply_p = "project_apply_pressure"
@@ -882,9 +876,12 @@ func debug_view(
 		view_div(compute_list, texture_rid)
 	elif di_debug_view == 3 and shader_name == "restriction":
 		view_div(compute_list, texture_rid)
-		# "restriction":
-		# "prolongate_correction":
-		# "add_correction":
+	elif di_debug_view == 4 and shader_name == "prolongate_correction":
+		view_residual(compute_list, texture_rid)
+	elif di_debug_view == 5 and shader_name == "add_correction_to_pressure":
+		view_p(compute_list, texture_rid)
+	elif di_debug_view == 6 and shader_name ==  "smooth_pressure_up":
+		view_p(compute_list, texture_rid)
 
 func view_t():
 	var shader_name = "view_t"

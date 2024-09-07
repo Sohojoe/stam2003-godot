@@ -58,16 +58,25 @@ func update_debug():
 		var s = " mode: fire_gpu_texture_shader"
 		s = s+"\n grid size: " + str(fire_gpu_texture_shader.grid_size_n)
 		if fire_gpu_texture_shader.di_debug_view == 1:
-			s = s+"\n debug view: residual"
+			s = s+"\n debug view 1: residual"
 			s = s+"\n multigrid level: " + str(fire_gpu_texture_shader.multigrid_sizes[mg_idx])
 		elif fire_gpu_texture_shader.di_debug_view == 2:
-			s = s+"\n debug view: p (presure)"
+			s = s+"\n debug view 2: p-down-loop (presure)"
 			s = s+"\n multigrid level: " + str(fire_gpu_texture_shader.multigrid_sizes[mg_idx])
 		elif fire_gpu_texture_shader.di_debug_view == 3:
-			s = s+"\n debug view: div (divergance)"
+			s = s+"\n debug view 3: div (divergance)"
 			s = s+"\n multigrid level: " + str(fire_gpu_texture_shader.multigrid_sizes[mg_idx])
 		elif fire_gpu_texture_shader.di_debug_view == 4:
-			s = s+"\n debug view: uv (x,y velocity)"
+			s = s+"\n debug view 4: prolongate correction"
+			s = s+"\n multigrid level: " + str(fire_gpu_texture_shader.multigrid_sizes[mg_idx])
+		elif fire_gpu_texture_shader.di_debug_view == 5:
+			s = s+"\n debug view 5: presure + prolongate correction"
+			s = s+"\n multigrid level: " + str(fire_gpu_texture_shader.multigrid_sizes[mg_idx])
+		elif fire_gpu_texture_shader.di_debug_view == 6:
+			s = s+"\n debug view 6: p-up-loop (presure)"
+			s = s+"\n multigrid level: " + str(fire_gpu_texture_shader.multigrid_sizes[mg_idx])
+		elif fire_gpu_texture_shader.di_debug_view == 7:
+			s = s+"\n debug view 7: uv (x,y velocity)"
 		else:
 			s = s+"\n debug view: none"
 		if fire_gpu_texture_shader.skip_gi_rendering:
@@ -104,7 +113,7 @@ func set_grid_size():
 
 func cycle_debug_view():
 	debug_view += 1
-	if debug_view > 4:
+	if debug_view > 7:
 		debug_view = 1
 	fire_gpu_texture_shader.di_debug_view = debug_view
 

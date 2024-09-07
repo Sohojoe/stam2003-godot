@@ -9,6 +9,7 @@
 
 [node name="Fire GPU Texture Shader" parent="." instance=ExtResource("3_hbnri")]
 scale = Vector2(0.6, 0.6)
+num_iters_coarset_grid_smooth = 20
 
 [node name="simple_ui" parent="." instance=ExtResource("3_hwi7c")]
 title_text = "Stam2003 reproduction in Godot

@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://14a0jyj5asey"
+path="res://.godot/imported/add_correction_to_pressure.glsl-ccef2df8a48231da1aaef0f5086bd5e3.res"
+
+[deps]
+
+source_file="res://components/stam_compute_shader/texture_shaders/add_correction_to_pressure.glsl"
+dest_files=["res://.godot/imported/add_correction_to_pressure.glsl-ccef2df8a48231da1aaef0f5086bd5e3.res"]
+
+[params]
+

@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://tykc7aav2yhy"
+path="res://.godot/imported/prolongate_correction.glsl-2eaa9b4c03e0df8905270e289d4aef91.res"
+
+[deps]
+
+source_file="res://components/stam_compute_shader/texture_shaders/prolongate_correction.glsl"
+dest_files=["res://.godot/imported/prolongate_correction.glsl-2eaa9b4c03e0df8905270e289d4aef91.res"]
+
+[params]
+

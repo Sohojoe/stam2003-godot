@@ -35,7 +35,9 @@ void main() {
     float p_d = texture(p, UV + down * texelSize).r;
 
     // Calculate Laplacian of pressure (Ax)
-    float laplacian = (p_l + p_r + p_u + p_d - 4.0 * p_c) / (consts.h * consts.h);
+    // HACK: TODO fufure why h does not work h*h should be 1 for square grid
+    // float laplacian = (p_l + p_r + p_u + p_d - 4.0 * p_c) / (consts.h * consts.h);
+    float laplacian = (p_l + p_r + p_u + p_d - 4.0 * p_c);
 
     // Calculate residual (r = b - Ax)
     float residual_value = div_value - laplacian;
