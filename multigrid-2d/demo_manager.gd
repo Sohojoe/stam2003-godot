@@ -2,6 +2,7 @@ extends Node2D
 
 var simple_ui: CanvasLayer
 var fire_gpu_texture_shader: FluidTextureShaderGpu 
+var debug_view_strategy: MultigridDebugViewStrategy
 
 var grid_sizes = [
 	pow(2,6), #64
@@ -23,6 +24,8 @@ var grid_sizes = [
 func _ready() -> void:
 	simple_ui = get_tree().current_scene.get_node("simple_ui")
 	fire_gpu_texture_shader = get_tree().current_scene.get_node("Fire GPU Texture Shader")
+	debug_view_strategy = MultigridDebugViewStrategy.new()
+	fire_gpu_texture_shader.set_debug_view_strategy(debug_view_strategy)
 	set_mode()
 	set_grid_size()
 
@@ -36,15 +39,12 @@ func handle_input():
 		cycle_mode()
 	if Input.is_action_just_pressed("cycle_grid_size"):
 		cycle_grid_size()
-	if Input.is_action_just_pressed("cycle_debug_view"):
-		cycle_debug_view()
-	if Input.is_action_just_pressed("cycle_multigrid"):
-		cycle_multigrid()
-	if Input.is_action_just_pressed("debug_view"):
-		if fire_gpu_texture_shader.di_debug_view != debug_view:
-			fire_gpu_texture_shader.di_debug_view = debug_view
-		else:
-			fire_gpu_texture_shader.di_debug_view = 0
+	if Input.is_action_just_pressed("toggle_debug_view"):
+		debug_view_strategy.enable_debug(!debug_view_strategy.is_debug_enabled())
+	if Input.is_action_just_pressed("next_debug_view"):
+		debug_view_strategy.next_view()
+	if Input.is_action_just_pressed("previous_debug_view"):
+		debug_view_strategy.previous_view()
 	if Input.is_action_just_pressed("restart"):
 		fire_gpu_texture_shader.restart()
 	if Input.is_action_just_pressed("toggle_view"):
@@ -53,32 +53,11 @@ func handle_input():
 		fire_gpu_texture_shader.pause_motion = !fire_gpu_texture_shader.pause_motion
 
 func update_debug():
-	var mg_idx = fire_gpu_texture_shader.debug_multigrid_idx
 	if mode == 0:
 		var s = " mode: fire_gpu_texture_shader"
 		s = s+"\n grid size: " + str(fire_gpu_texture_shader.grid_size_n)
-		if fire_gpu_texture_shader.di_debug_view == 1:
-			s = s+"\n debug view 1: residual"
-			s = s+"\n multigrid level: " + str(fire_gpu_texture_shader.multigrid_sizes[mg_idx])
-		elif fire_gpu_texture_shader.di_debug_view == 2:
-			s = s+"\n debug view 2: p-down-loop (presure)"
-			s = s+"\n multigrid level: " + str(fire_gpu_texture_shader.multigrid_sizes[mg_idx])
-		elif fire_gpu_texture_shader.di_debug_view == 3:
-			s = s+"\n debug view 3: div (divergance)"
-			s = s+"\n multigrid level: " + str(fire_gpu_texture_shader.multigrid_sizes[mg_idx])
-		elif fire_gpu_texture_shader.di_debug_view == 4:
-			s = s+"\n debug view 4: prolongate correction"
-			s = s+"\n multigrid level: " + str(fire_gpu_texture_shader.multigrid_sizes[mg_idx])
-		elif fire_gpu_texture_shader.di_debug_view == 5:
-			s = s+"\n debug view 5: presure + prolongate correction"
-			s = s+"\n multigrid level: " + str(fire_gpu_texture_shader.multigrid_sizes[mg_idx])
-		elif fire_gpu_texture_shader.di_debug_view == 6:
-			s = s+"\n debug view 6: p-up-loop (presure)"
-			s = s+"\n multigrid level: " + str(fire_gpu_texture_shader.multigrid_sizes[mg_idx])
-		elif fire_gpu_texture_shader.di_debug_view == 7:
-			s = s+"\n debug view 7: uv (x,y velocity)"
-		else:
-			s = s+"\n debug view: none"
+		if debug_view_strategy.is_debug_enabled():
+			s = s+"\n " + debug_view_strategy.get_step_debug_name(debug_view_strategy.view_step_idx)
 		if fire_gpu_texture_shader.skip_gi_rendering:
 			s = s+"\n rendering disabled (v to toggle))"
 		simple_ui.set_debug_output_text(s)
@@ -108,16 +87,5 @@ func cycle_grid_size():
 
 func set_grid_size():
 	fire_gpu_texture_shader.grid_size_n = grid_sizes[grid_size_idx]
-	if fire_gpu_texture_shader.debug_multigrid_idx >= len(fire_gpu_texture_shader.multigrid_sizes):
-		fire_gpu_texture_shader.debug_multigrid_idx = 0
-
-func cycle_debug_view():
-	debug_view += 1
-	if debug_view > 7:
-		debug_view = 1
-	fire_gpu_texture_shader.di_debug_view = debug_view
-
-func cycle_multigrid():
-	fire_gpu_texture_shader.debug_multigrid_idx += 1
 	if fire_gpu_texture_shader.debug_multigrid_idx >= len(fire_gpu_texture_shader.multigrid_sizes):
 		fire_gpu_texture_shader.debug_multigrid_idx = 0

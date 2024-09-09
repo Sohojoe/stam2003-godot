@@ -4,15 +4,6 @@
 layout(local_size_x = 16, local_size_y = 16) in;
 
 // --- Begin Shared Buffer Definition
-layout(set = 0, binding = 0, std430) readonly buffer ConstBuffer {
-    uint numX;
-    uint numY;
-    uint viewX;
-    uint viewY;
-    float h;
-    float h2;
-} consts;
-
 layout(set = 0, binding = 1) uniform sampler2D div;
 layout(set = 0, binding = 2,rgba32f) writeonly uniform image2D output_image;
 
@@ -25,7 +16,7 @@ layout(push_constant, std430) uniform Params {
 
 void main() {
     ivec2 cell = ivec2(gl_GlobalInvocationID.xy);
-    vec2 texelSize = 1.0 / vec2(consts.viewX, consts.viewY);
+    vec2 texelSize = 1.0 / imageSize(output_image);
     vec2 UV = (vec2(cell) + 0.5) * texelSize;
 
     float div = texture(div, UV).r; 
