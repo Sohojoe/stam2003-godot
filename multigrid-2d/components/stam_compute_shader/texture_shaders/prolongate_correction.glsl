@@ -20,13 +20,10 @@ layout(set = 0, binding = 2, r16f) uniform image2D fine_correction;
 void main() {
     ivec2 fine_cell = ivec2(gl_GlobalInvocationID.xy);
     vec2 fine_texel_size = 1.0 / imageSize(fine_correction);
-    vec2 fine_UV = (vec2(fine_cell) + 0.5) * fine_texel_size;
-    
-    // Calculate the corresponding position in the coarse grid
-    vec2 coarse_UV = fine_UV * 0.5;
+    vec2 UV = (vec2(fine_cell) + 0.5) * fine_texel_size;
     
     // Sample the coarse correction
-    float coarse_value = texture(coarse_correction, coarse_UV).r;
+    float coarse_value = texture(coarse_correction, UV).r;
     
     // Prolongate (interpolate) the correction to the fine grid
     imageStore(fine_correction, fine_cell, vec4(coarse_value));

@@ -20,7 +20,7 @@ layout(set = 0, binding = 3, r32f) uniform image2D updated_pressure;
 
 void main() {
     ivec2 cell = ivec2(gl_GlobalInvocationID.xy);
-    vec2 texelSize = 1.0 / vec2(consts.numX, consts.numY);
+    vec2 texelSize = 1.0 / imageSize(updated_pressure);
     vec2 UV = (vec2(cell) + 0.5) * texelSize;
 
     // Read the current pressure and correction values
