@@ -19,6 +19,10 @@ config/icon="res://icon.svg"
 
 DemoManager="*res://demo_manager.gd"
 
+[display]
+
+window/vsync/vsync_mode=0
+
 [input]
 
 cycle_mode={

@@ -466,7 +466,7 @@ func simulate_stam(dt: float) -> void:
 	multigrid_v_cycle()
 	stam_advect_uvt(dt)
 	multigrid_v_cycle()
-	if not debug_view_strategy.is_debug_enabled():
+	if not debug_view_strategy.is_debug_enabled() and not skip_gi_rendering:
 		view_t()
 
 #--- helper functions
@@ -670,7 +670,7 @@ func multigrid_v_cycle():
 	var uniform_set_div = get_uniform_set([
 		shader_name_div,
 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-		[sampler_nearest_clamp, uvst_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		[sampler_nearest_0, uvst_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 		#[sampler_nearest_0, s_texture_rid], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 		multigrid_p_texture_rids[0], 3, RenderingDevice.UNIFORM_TYPE_IMAGE,
 		div_texture_rid, 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
@@ -686,8 +686,8 @@ func multigrid_v_cycle():
 				consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
 				[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 				multigrid_p_texture_rids[0], 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
-				[sampler_nearest_clamp, div_texture_rid], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-				[sampler_nearest_clamp, multigrid_p_texture_rids_prev[0]], 10, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
+				[sampler_nearest_0, div_texture_rid], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+				[sampler_nearest_0, multigrid_p_texture_rids_prev[0]], 10, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
 		dispatch(compute_list, shader_name_p, uniform_set_p)
 	debug_view_strategy.add_step(shader_name_p, multigrid_p_texture_rids[0], 0)
 	
@@ -705,8 +705,8 @@ func multigrid_v_cycle():
 			shader_name_res,
 			consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
 			[sampler_nearest_0, s_texture_rid], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-			[sampler_nearest_clamp, multigrid_p_texture_rids[fine_idx]], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-			[sampler_nearest_clamp, cur_residual_input], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			[sampler_nearest_0, multigrid_p_texture_rids[fine_idx]], 2, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			[sampler_nearest_0, cur_residual_input], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 			multigrid_correction_texture_rids[fine_idx], 4, RenderingDevice.UNIFORM_TYPE_IMAGE])
 		dispatch(compute_list, shader_name_res, uniform_set_res, null, multigrid_sizes[fine_idx])
 		debug_view_strategy.add_step(shader_name_res, multigrid_correction_texture_rids[fine_idx], fine_idx)
@@ -716,7 +716,7 @@ func multigrid_v_cycle():
 		var uniform_set_restrict = get_uniform_set([
 			shader_name_restrict,
 			consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-			[sampler_nearest_clamp, multigrid_correction_texture_rids[fine_idx]], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			[sampler_linear_clamp, multigrid_correction_texture_rids[fine_idx]], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 			multigrid_correction_texture_rids[coarse_idx], 2, RenderingDevice.UNIFORM_TYPE_IMAGE
 		])
 		dispatch(compute_list, shader_name_restrict, uniform_set_restrict, null, multigrid_sizes[coarse_idx])
@@ -736,18 +736,28 @@ func multigrid_v_cycle():
 		if coarse_idx == coarsest_level:
 			# Solve at the coarsest level
 			num_iters = num_iters_coarset_grid_smooth
-		for _j in range(num_iters):
+		# for _j in range(num_iters):
+		# 	swap_p_buffer(coarse_idx)
+		# 	var uniform_set_smooth = get_uniform_set([
+		# 		shader_name_smooth,
+		# 		consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+		# 		[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		# 		multigrid_p_texture_rids[coarse_idx], 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
+		# 		[sampler_nearest_clamp, multigrid_correction_texture_rids[coarse_idx]], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+		# 		[sampler_nearest_clamp, multigrid_p_texture_rids_prev[coarse_idx]], 10, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
+		# 	dispatch(compute_list, shader_name_smooth, uniform_set_smooth, null, multigrid_sizes[coarse_idx])
+		# debug_view_strategy.add_step(shader_name_smooth, multigrid_p_texture_rids[coarse_idx], coarse_idx)
+		for k in range(num_iters):
 			swap_p_buffer(coarse_idx)
-			var uniform_set_smooth = get_uniform_set([
-				shader_name_smooth,
-				consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-				[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-				multigrid_p_texture_rids[coarse_idx], 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
-				[sampler_nearest_clamp, multigrid_correction_texture_rids[coarse_idx]], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
-				[sampler_nearest_clamp, multigrid_p_texture_rids_prev[coarse_idx]], 10, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
-			dispatch(compute_list, shader_name_smooth, uniform_set_smooth, null, multigrid_sizes[coarse_idx])
-		debug_view_strategy.add_step(shader_name_smooth, multigrid_p_texture_rids[coarse_idx], coarse_idx)
-		
+			var uniform_set_p = get_uniform_set([
+				shader_name_p,
+					consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
+					[sampler_nearest_0, s_texture_rid], 3, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+					multigrid_p_texture_rids[coarse_idx], 4, RenderingDevice.UNIFORM_TYPE_IMAGE,
+					[sampler_nearest_clamp, multigrid_correction_texture_rids[coarse_idx]], 5, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+					[sampler_nearest_clamp, multigrid_p_texture_rids_prev[coarse_idx]], 10, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE])
+			dispatch(compute_list, shader_name_p, uniform_set_p)
+		debug_view_strategy.add_step(shader_name_p, multigrid_p_texture_rids[coarse_idx], coarse_idx)		
 		cur_residual_input = multigrid_correction_texture_rids[coarse_idx]
 
 	# up loop
@@ -759,7 +769,7 @@ func multigrid_v_cycle():
 		var uniform_set_prolongate = get_uniform_set([
 			shader_name_prolongate,
 			consts_buffer, 0, RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER,
-			[sampler_nearest_clamp, multigrid_p_texture_rids[coarse_idx]], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
+			[sampler_linear_clamp, multigrid_p_texture_rids[coarse_idx]], 1, RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE,
 			multigrid_correction_texture_rids[fine_idx], 2, RenderingDevice.UNIFORM_TYPE_IMAGE
 		])
 		dispatch(compute_list, shader_name_prolongate, uniform_set_prolongate, null, multigrid_sizes[fine_idx])

@@ -47,9 +47,10 @@ void main() {
 
     // float _h = 1.0 / max(consts.numX, consts.numY);
     float _h = 1.0 / 64;
+    float relaxation = 1.5;
 
-    uvst.x -= 0.5 * (texture(p, cell_r).r - texture(p, cell_l).r) / _h;
-    uvst.y -= 0.5 * (texture(p, cell_d).r - texture(p, cell_u).r) / _h;
+    uvst.x -= relaxation * 0.5 * (texture(p, cell_r).r - texture(p, cell_l).r) / _h;
+    uvst.y -= relaxation * 0.5 * (texture(p, cell_d).r - texture(p, cell_u).r) / _h;
 
     uvst.x = skip ? 0 : uvst.x;
     uvst.y = skip ? 0 : uvst.y;
