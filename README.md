@@ -23,6 +23,14 @@ using flops as a measure, i found todays hardware getting ~15% of its theortical
 
 these are results from each optimization, see branches for different code implementations
 
+
+### multigrid 2d
+| | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096 | 8192 | 16,384  | 32,768 |
+|-|-|-|-|-|-|-|-|-|-|-|
+|M3| 2142 | 2132 | 2062 | 1649 | 767 | 141 |35 | 9 | 2 | xxx |
+|4090| 3848 | 3775 | 3726 | 3267 | 3010 | 984 | 253 | 61 | 7 | xxx |
+
+
 ### 3d
 | | 64 | 128 | 200| 256 | 400 | 512 | 1024 | 
 |-|-|-|-|-|-|-|-|

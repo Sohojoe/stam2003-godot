@@ -12,8 +12,10 @@ scale = Vector2(0.6, 0.6)
 debug_residual_color_scale = 0.01
 debug_div_color_scale = 0.01
 debug_p_color_scale = 0.01
-num_iters_pre_smooth = 5
-num_iters_smooth_down = 25
+num_iters_pre_smooth = 18
+num_iters_smooth_down = 15
+num_iters_coarset_grid_smooth = 12
+num_iters_smooth_up = 14
 
 [node name="simple_ui" parent="." instance=ExtResource("3_hwi7c")]
 title_text = "Stam2003 reproduction in Godot
