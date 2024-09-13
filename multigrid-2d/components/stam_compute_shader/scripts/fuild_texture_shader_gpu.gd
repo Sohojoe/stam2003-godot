@@ -310,7 +310,7 @@ func initialize_compute_code(grid_size: int) -> void:
 	multigrid_p_texture_rids_prev = []
 	var num_multi_grid_levels = 0
 	var cur_grid_size:int = numX
-	while cur_grid_size >= 32 or num_multi_grid_levels < 3:
+	while cur_grid_size >= 64 or num_multi_grid_levels < 3:
 		multigrid_sizes.append(cur_grid_size)
 		var fmt_mg_R16_SFLOAT := RDTextureFormat.new()
 		fmt_mg_R16_SFLOAT.width = cur_grid_size
@@ -789,7 +789,7 @@ func multigrid_v_cycle():
 		debug_view_strategy.add_step(shader_name_add, multigrid_p_texture_rids[fine_idx], fine_idx)
 		# Smooth the pressure
 		for _t in range(num_iters_smooth_up):
-			swap_p_buffer(coarse_idx)
+			swap_p_buffer(fine_idx)
 			var shader_name_smooth = "project_solve_pressure"
 			var uniform_set_smooth = get_uniform_set([
 				shader_name_smooth,
